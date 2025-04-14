@@ -17,8 +17,9 @@ struct EaseIdfApp: App {
                 ContentView()
                     .onAppear {
                         LocationService.shared.requestAuthorization()
-                        
                         LocationService.shared.startLocationUpdates()
+                        
+                        LineDataService.shared.loadLinesFromFile(named: "transport_lines")
                         
                         let settings = StorageService.shared.getUserSettings()
                         WidgetService.shared.scheduleBackgroundUpdates(interval: settings.refreshInterval)
