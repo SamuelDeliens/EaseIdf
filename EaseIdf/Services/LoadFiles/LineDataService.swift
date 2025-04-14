@@ -26,58 +26,66 @@ class LineDataService {
     func loadLinesFromFile(named filename: String) {
         isLoading = true
         
-        guard let url = Bundle.main.url(forResource: filename, withExtension: "json") else {
-            print("Error: File \(filename).json not found in bundle")
-            isLoading = false
-            return
-        }
-        
-        do {
-            let data = try Data(contentsOf: url)
-            let lines = try JSONDecoder().decode([ImportedLine].self, from: data)
-            self.importedLines = lines
-            
-            // Cache the loaded data
-            cacheImportedLines(lines)
-            
-            // Also convert and cache as TransportLine objects for compatibility
-            let transportLines = lines.map { $0.toTransportLine() }
-            StorageService.shared.cacheTransportLines(transportLines)
-            
-            isLoading = false
-        } catch {
-            print("Error loading lines from JSON: \(error)")
-            isLoading = false
+        Task {
+            do {
+                let lines = try await self.loadLinesFromJSONFile(named: filename)
+                DispatchQueue.main.async {
+                    self.importedLines = lines
+                    self.cacheImportedLines(lines)
+                    
+                    // Aussi convertir et cacher en tant qu'objets TransportLine pour compatibilité
+                    let transportLines = lines.map { $0.toTransportLine() }
+                    StorageService.shared.cacheTransportLines(transportLines)
+                    
+                    self.isLoading = false
+                }
+            } catch {
+                print("Error loading lines from JSON: \(error)")
+                DispatchQueue.main.async {
+                    self.isLoading = false
+                }
+            }
         }
     }
     
-    /// Load lines from JSON data string
-    func loadLinesFromJSONString(_ jsonString: String) {
-        isLoading = true
-        
-        guard let data = jsonString.data(using: .utf8) else {
-            print("Error: Could not convert JSON string to data")
-            isLoading = false
-            return
+    func loadLinesFromJSONFile(named filename: String) async throws -> [ImportedLine] {
+        guard let url = Bundle.main.url(forResource: filename, withExtension: "json") else {
+            throw NSError(domain: "FileNotFound", code: 404, userInfo: [NSLocalizedDescriptionKey: "File \(filename).json not found"])
         }
+        
+        let data = try Data(contentsOf: url)
+        
+        // Si le JSON commence par un tableau, nous pouvons le décoder directement
+        let decoder = JSONDecoder()
         
         do {
-            let lines = try JSONDecoder().decode([ImportedLine].self, from: data)
-            self.importedLines = lines
-            
-            // Cache the loaded data
-            cacheImportedLines(lines)
-            
-            // Also convert and cache as TransportLine objects for compatibility
-            let transportLines = lines.map { $0.toTransportLine() }
-            StorageService.shared.cacheTransportLines(transportLines)
-            
-            isLoading = false
+            // Essayons d'abord de décoder comme un tableau d'ImportedLine
+            return try decoder.decode([ImportedLine].self, from: data)
         } catch {
-            print("Error parsing JSON string: \(error)")
-            isLoading = false
+            print("Direct decoding failed: \(error)")
+            
+            // Si ça échoue, essayons d'examiner la structure du JSON
+            if let json = try? JSONSerialization.jsonObject(with: data, options: []) {
+                print("JSON structure: \(type(of: json))")
+                
+                // Selon la structure réelle, nous pouvons adapter notre approche
+                if let recordsDict = json as? [String: Any], let records = recordsDict["records"] as? [[String: Any]] {
+                    // Structure comme { "records": [ {...}, {...} ] }
+                    let recordsData = try JSONSerialization.data(withJSONObject: records, options: [])
+                    let recordsArray = try decoder.decode([Record].self, from: recordsData)
+                    return recordsArray.compactMap { $0.fields }
+                }
+            }
+            
+            // Si nous n'avons pas pu traiter la structure, relance l'erreur
+            throw error
         }
     }
+    
+    struct Record: Codable {
+        let fields: ImportedLine
+    }
+    
     
     /// Get directions for a line based on shortname_groupoflines
     func getDirectionsForLine(lineId: String) -> [LineDirection] {

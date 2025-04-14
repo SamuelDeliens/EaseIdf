@@ -29,11 +29,23 @@ struct ImportedLine: Codable, Identifiable {
     let shortname_groupoflines: String?
     let notice_title: String?
     let notice_text: String?
-    let picto: String?
     let valid_fromdate: String?
     let valid_todate: String?
     let status: String?
     let privatecode: String?
+        
+    private var _picto: PictoUnion?
+    
+    var picto: String? {
+        switch _picto {
+        case .string(let value):
+            return value
+        case .object(let obj):
+            return obj["url"]
+        case nil:
+            return nil
+        }
+    }
     
     // Identifiable conformance
     var id: String { id_line }
@@ -47,6 +59,55 @@ struct ImportedLine: Codable, Identifiable {
         case "rail": return .rail
         case "rer": return .rer
         default: return .other
+        }
+    }
+    
+    enum PictoUnion: Codable {
+        case string(String)
+        case object([String: String])
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        // Décodage des champs normaux
+        id_line = try container.decode(String.self, forKey: .id_line)
+        name_line = try container.decode(String.self, forKey: .name_line)
+        shortname_line = try container.decode(String.self, forKey: .shortname_line)
+        transportmode = try container.decode(String.self, forKey: .transportmode)
+        transportsubmode = try container.decodeIfPresent(String.self, forKey: .transportsubmode)
+        type = try container.decodeIfPresent(String.self, forKey: .type)
+        operatorref = try container.decode(String.self, forKey: .operatorref)
+        operatorname = try container.decode(String.self, forKey: .operatorname)
+        additionaloperators = try container.decodeIfPresent(String.self, forKey: .additionaloperators)
+        networkname = try container.decodeIfPresent(String.self, forKey: .networkname)
+        colourweb_hexa = try container.decodeIfPresent(String.self, forKey: .colourweb_hexa)
+        textcolourweb_hexa = try container.decodeIfPresent(String.self, forKey: .textcolourweb_hexa)
+        colourprint_cmjn = try container.decodeIfPresent(String.self, forKey: .colourprint_cmjn)
+        textcolourprint_hexa = try container.decodeIfPresent(String.self, forKey: .textcolourprint_hexa)
+        accessibility = try container.decodeIfPresent(String.self, forKey: .accessibility)
+        audiblesigns_available = try container.decodeIfPresent(String.self, forKey: .audiblesigns_available)
+        visualsigns_available = try container.decodeIfPresent(String.self, forKey: .visualsigns_available)
+        id_groupoflines = try container.decodeIfPresent(String.self, forKey: .id_groupoflines)
+        shortname_groupoflines = try container.decodeIfPresent(String.self, forKey: .shortname_groupoflines)
+        notice_title = try container.decodeIfPresent(String.self, forKey: .notice_title)
+        notice_text = try container.decodeIfPresent(String.self, forKey: .notice_text)
+        valid_fromdate = try container.decodeIfPresent(String.self, forKey: .valid_fromdate)
+        valid_todate = try container.decodeIfPresent(String.self, forKey: .valid_todate)
+        status = try container.decodeIfPresent(String.self, forKey: .status)
+        privatecode = try container.decodeIfPresent(String.self, forKey: .privatecode)
+        
+        // Décodage du champ picto qui peut être soit une chaîne, soit un objet
+        do {
+            if let pictoString = try? container.decodeIfPresent(String.self, forKey: ._picto) {
+                _picto = .string(pictoString)
+            } else if let pictoDict = try? container.decodeIfPresent([String: String].self, forKey: ._picto) {
+                _picto = .object(pictoDict)
+            } else {
+                _picto = nil
+            }
+        } catch {
+            _picto = nil
         }
     }
     
@@ -78,6 +139,16 @@ struct ImportedLine: Codable, Identifiable {
             return shortname_line
         }
     }
+    
+    enum CodingKeys: String, CodingKey {
+        case id_line, name_line, shortname_line, transportmode, transportsubmode, type
+        case operatorref, operatorname, additionaloperators, networkname
+        case colourweb_hexa, textcolourweb_hexa, colourprint_cmjn, textcolourprint_hexa
+        case accessibility, audiblesigns_available, visualsigns_available
+        case id_groupoflines, shortname_groupoflines, notice_title, notice_text
+        case _picto = "picto"
+        case valid_fromdate, valid_todate, status, privatecode
+    }
 }
 
 // MARK: - Direction Model
@@ -94,5 +165,21 @@ struct LineDirection: Identifiable {
     // Used for display in UI
     var displayName: String {
         "\(lineName) → \(direction)"
+    }
+}
+
+struct PictoValue: Codable {
+    let url: String?
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        
+        if let stringValue = try? container.decode(String.self) {
+            url = stringValue
+        } else if let objectValue = try? container.decode([String: String].self) {
+            url = objectValue["url"]
+        } else {
+            url = nil
+        }
     }
 }
