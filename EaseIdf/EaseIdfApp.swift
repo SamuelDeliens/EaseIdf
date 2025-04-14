@@ -10,23 +10,24 @@ import SwiftData
 
 @main
 struct EaseIdfApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    var sharedModelContainer: ModelContainer = PersistenceService.shared.getModelContainer()
 
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+            WindowGroup {
+                ContentView()
+                    .onAppear {
+                        LocationService.shared.requestAuthorization()
+                        
+                        LocationService.shared.startLocationUpdates()
+                        
+                        let settings = StorageService.shared.getUserSettings()
+                        WidgetService.shared.scheduleBackgroundUpdates(interval: settings.refreshInterval)
+                        
+                        Task {
+                            await WidgetService.shared.refreshWidgetData()
+                        }
+                    }
+            }
+            .modelContainer(sharedModelContainer)
         }
-        .modelContainer(sharedModelContainer)
-    }
 }
