@@ -8,10 +8,26 @@
 import Foundation
 
 struct TransportFavorite: Identifiable, Codable {
-    let id: UUID = UUID()
+    let id: UUID
     let stopId: String
-    let lineId: String?  // Optionnel car on peut vouloir tous les passages à un arrêt
+    let lineId: String?
     let displayName: String
     var displayConditions: [DisplayCondition]
     var priority: Int
+
+    init(
+        id: UUID = UUID(),
+        stopId: String,
+        lineId: String?,
+        displayName: String,
+        displayConditions: [DisplayCondition],
+        priority: Int
+    ) {
+        self.id = id
+        self.stopId = stopId
+        self.lineId = lineId
+        self.displayName = displayName
+        self.displayConditions = displayConditions
+        self.priority = priority
+    }
 }
