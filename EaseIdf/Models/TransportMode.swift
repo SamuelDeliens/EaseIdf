@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum TransportMode: String, Codable {
+enum TransportMode: String, Codable, CaseIterable {
     case bus = "bus"
     case tram = "tram"
     case metro = "metro"
