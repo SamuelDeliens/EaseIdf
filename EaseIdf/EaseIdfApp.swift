@@ -20,6 +20,7 @@ struct EaseIdfApp: App {
                         LocationService.shared.startLocationUpdates()
                         
                         LineDataService.shared.loadLinesFromFile(named: "transport_lines")
+                        StopDataService.shared.loadStopsFromFile(named: "transport_stops")
                         
                         let settings = StorageService.shared.getUserSettings()
                         WidgetService.shared.scheduleBackgroundUpdates(interval: settings.refreshInterval)
