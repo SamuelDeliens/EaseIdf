@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import Combine
+import SwiftData
 
 class AddTransportViewModel: ObservableObject {
     // États de sélection
@@ -43,8 +44,11 @@ class AddTransportViewModel: ObservableObject {
     @Published var currentStep: AddTransportStep = .selectTransportMode
     
     private var cancellables = Set<AnyCancellable>()
+    private var modelContext: ModelContext?
     
-    init() {
+    init(modelContext: ModelContext? = nil) {
+        self.modelContext = modelContext
+        
         // Observer les changements de recherche pour filtrer les lignes
         $searchLineQuery
             .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
@@ -64,6 +68,11 @@ class AddTransportViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
+    // Mise à jour du ModelContext si nécessaire
+    func setModelContext(_ context: ModelContext?) {
+        self.modelContext = context
+    }
+    
     // Filtrer les lignes en fonction du mode de transport et de la requête
     func filterLines(query: String) {
         if let mode = selectedTransportMode {
@@ -77,7 +86,7 @@ class AddTransportViewModel: ObservableObject {
     func filterStops(query: String) {
         guard let line = selectedLine else { return }
         
-        let stopsForLine = StopDataService.shared.getStopsForLine(lineId: line.id)
+        let stopsForLine = StopDataService.shared.getStopsForLine(lineId: line.id_line)
         
         if query.isEmpty {
             self.filteredStops = stopsForLine
@@ -103,11 +112,11 @@ class AddTransportViewModel: ObservableObject {
         self.searchStopQuery = ""
         
         // Récupérer les arrêts pour cette ligne
-        let stopsForLine = StopDataService.shared.getStopsForLine(lineId: line.id)
+        let stopsForLine = StopDataService.shared.getStopsForLine(lineId: line.id_line)
         self.filteredStops = stopsForLine
         
         // Récupérer les directions disponibles
-        self.availableDirections = LineDataService.shared.getDirectionsForLine(lineId: line.id)
+        self.availableDirections = LineDataService.shared.getDirectionsForLine(lineId: line.id_line)
         
         self.currentStep = .selectStop
     }
@@ -176,13 +185,62 @@ class AddTransportViewModel: ObservableObject {
             priority: 0
         )
         
-        // Enregistrer le favori
-        StorageService.shared.saveFavorite(favorite)
+        // Enregistrer le favori dans SwiftData
+        if let modelContext = modelContext {
+            // Utiliser SwiftData pour l'enregistrement
+            let favoriteModel = TransportFavoriteModel.fromStruct(favorite)
+            modelContext.insert(favoriteModel)
+            try? modelContext.save()
+        } else {
+            // Fallback vers l'ancien système
+            StorageService.shared.saveFavorite(favorite)
+        }
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             self?.isSaving = false
             self?.favoriteCreated = true
         }
+    }
+    
+    // Vérifier si des données sont disponibles
+    func checkDataAvailability() {
+        if filteredLines.isEmpty && selectedTransportMode != nil && !isLoading {
+            print("Aucune ligne trouvée pour le mode \(String(describing: selectedTransportMode))")
+            
+            // Essayer de rafraîchir les données
+            Task {
+                await loadTransportData()
+            }
+        }
+    }
+    
+    // Charger les données si nécessaire
+    func loadTransportData() async {
+        if LineDataService.shared.getAllLines().isEmpty {
+            // Charger les données des lignes depuis le fichier
+            LineDataService.shared.loadLinesFromFile(named: "transport_lines")
+        }
+        
+        if StopDataService.shared.getAllStops().isEmpty {
+            // Charger les données des arrêts depuis le fichier
+            StopDataService.shared.loadStopsFromFile(named: "transport_stops")
+        }
+        
+        // Rechargement des filtres après chargement des données
+        await MainActor.run {
+            if let mode = selectedTransportMode {
+                self.filterLines(query: searchLineQuery)
+            }
+            
+            if let line = selectedLine {
+                self.filterStops(query: searchStopQuery)
+            }
+        }
+    }
+    
+    // Variable pour indiquer si le chargement est en cours
+    var isLoading: Bool {
+        return LineDataService.shared.isLoading || StopDataService.shared.isLoading
     }
     
     // Réinitialiser le flux d'ajout

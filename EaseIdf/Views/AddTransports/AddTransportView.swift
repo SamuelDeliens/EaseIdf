@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct AddTransportView: View {
     @Environment(\.dismiss) private var dismiss
@@ -52,6 +53,18 @@ struct AddTransportView: View {
                     Button("Annuler") {
                         dismiss()
                     }
+                }
+            }
+            .onAppear {
+                // Passer le contexte de modèle au ViewModel
+                viewModel.setModelContext(modelContext)
+                
+                // Vérifier si des données sont disponibles
+                viewModel.checkDataAvailability()
+                
+                // Essayer de précharger les données si nécessaire
+                Task {
+                    await viewModel.loadTransportData()
                 }
             }
             .onDisappear {
@@ -111,4 +124,5 @@ struct AddTransportView: View {
 
 #Preview {
     AddTransportView()
+        .modelContainer(PersistenceService.shared.getModelContainer())
 }

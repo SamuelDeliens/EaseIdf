@@ -27,21 +27,30 @@ struct StopSelectionView: View {
                 .padding(.horizontal)
                 .padding(.top, 8)
             
-            // Liste des arrêts
-            if viewModel.filteredStops.isEmpty {
-                if viewModel.searchStopQuery.isEmpty {
-                    ContentUnavailableView(
-                        "Aucun arrêt disponible",
-                        systemImage: "mappin.and.ellipse",
-                        description: Text("Aucun arrêt n'est disponible pour cette ligne.")
-                    )
-                } else {
-                    ContentUnavailableView(
-                        "Aucun résultat",
-                        systemImage: "magnifyingglass",
-                        description: Text("Essayez une autre recherche.")
-                    )
+            // Liste des arrêts ou indicateur de chargement
+            if viewModel.isLoading {
+                Spacer()
+                ProgressView("Chargement des arrêts...")
+                Spacer()
+            } else if viewModel.filteredStops.isEmpty {
+                ContentUnavailableView(
+                    viewModel.searchStopQuery.isEmpty ? "Aucun arrêt disponible" : "Aucun résultat",
+                    systemImage: viewModel.searchStopQuery.isEmpty ? "mappin.and.ellipse" : "magnifyingglass",
+                    description: Text(viewModel.searchStopQuery.isEmpty ?
+                                     "Aucun arrêt n'est disponible pour cette ligne." :
+                                     "Essayez une autre recherche.")
+                )
+                // Bouton pour recharger les données
+                Button {
+                    Task {
+                        await viewModel.loadTransportData()
+                    }
+                } label: {
+                    Label("Recharger les données", systemImage: "arrow.clockwise")
+                        .padding()
                 }
+                .buttonStyle(.bordered)
+                .padding()
             } else {
                 ScrollView {
                     LazyVStack(spacing: 8) {
@@ -63,6 +72,13 @@ struct StopSelectionView: View {
         }
         .onAppear {
             viewModel.filterStops(query: viewModel.searchStopQuery)
+            
+            // Si aucun arrêt n'est trouvé, vérifier si des données sont disponibles
+            if viewModel.filteredStops.isEmpty && !viewModel.isLoading {
+                Task {
+                    await viewModel.loadTransportData()
+                }
+            }
         }
     }
 }

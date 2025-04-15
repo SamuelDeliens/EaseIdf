@@ -46,6 +46,7 @@ class LineDataService {
         Task {
             do {
                 let lines = try await self.loadLinesFromJSONFile(named: filename)
+                print("line data counted", lines.count)
                 
                 // Sauvegarder dans SwiftData
                 try await DataPersistenceService.shared.saveLines(lines, context: modelContext)

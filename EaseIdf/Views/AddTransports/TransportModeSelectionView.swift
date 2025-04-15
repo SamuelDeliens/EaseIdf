@@ -25,34 +25,52 @@ struct TransportModeSelectionView: View {
                 .font(.headline)
                 .padding(.top)
             
-            ForEach(modes, id: \.0) { mode, name, icon in
+            if viewModel.isLoading {
+                Spacer()
+                ProgressView("Chargement des données...")
+                    .padding()
+                Spacer()
+            } else {
+                ForEach(modes, id: \.0) { mode, name, icon in
+                    Button {
+                        withAnimation {
+                            viewModel.selectTransportMode(mode)
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: icon)
+                                .font(.title2)
+                                .frame(width: 40)
+                            
+                            Text(name)
+                                .font(.title3)
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding()
+                        .background(Color(.secondarySystemBackground))
+                        .cornerRadius(10)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                
+                // Essayer de charger les données si nécessaire
                 Button {
-                    withAnimation {
-                        viewModel.selectTransportMode(mode)
+                    Task {
+                        await viewModel.loadTransportData()
                     }
                 } label: {
-                    HStack {
-                        Image(systemName: icon)
-                            .font(.title2)
-                            .frame(width: 40)
-                        
-                        Text(name)
-                            .font(.title3)
-                        
-                        Spacer()
-                        
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .padding()
-                    .background(Color(.secondarySystemBackground))
-                    .cornerRadius(10)
+                    Label("Rafraîchir les données", systemImage: "arrow.clockwise")
+                        .padding()
                 }
-                .buttonStyle(PlainButtonStyle())
+                .padding(.top)
+                
+                Spacer()
             }
-            
-            Spacer()
         }
         .padding()
     }

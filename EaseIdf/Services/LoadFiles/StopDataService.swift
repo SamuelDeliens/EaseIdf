@@ -58,6 +58,7 @@ class StopDataService {
                 
                 // Décodage direct en tant que tableau d'ImportedStop
                 let stops = try decoder.decode([ImportedStop].self, from: data)
+                print("stops data counted", stops.count)
                 
                 // Sauvegarder dans SwiftData sur le thread principal
                 await MainActor.run {

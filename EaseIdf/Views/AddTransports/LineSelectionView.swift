@@ -40,21 +40,30 @@ struct LineSelectionView: View {
             .padding(.horizontal)
             .padding(.top, 4)
             
-            // Liste des lignes
-            if viewModel.filteredLines.isEmpty {
-                if viewModel.searchLineQuery.isEmpty {
-                    ContentUnavailableView(
-                        "Aucune ligne disponible",
-                        systemImage: "tram",
-                        description: Text("Aucune ligne n'est disponible pour ce mode de transport.")
-                    )
-                } else {
-                    ContentUnavailableView(
-                        "Aucun résultat",
-                        systemImage: "magnifyingglass",
-                        description: Text("Essayez une autre recherche.")
-                    )
+            // Liste des lignes ou indicateur de chargement
+            if viewModel.isLoading {
+                Spacer()
+                ProgressView("Chargement des lignes...")
+                Spacer()
+            } else if viewModel.filteredLines.isEmpty {
+                ContentUnavailableView(
+                    viewModel.searchLineQuery.isEmpty ? "Aucune ligne disponible" : "Aucun résultat",
+                    systemImage: viewModel.searchLineQuery.isEmpty ? "tram" : "magnifyingglass",
+                    description: Text(viewModel.searchLineQuery.isEmpty ?
+                                     "Aucune ligne n'est disponible pour ce mode de transport." :
+                                     "Essayez une autre recherche.")
+                )
+                // Bouton pour recharger les données
+                Button {
+                    Task {
+                        await viewModel.loadTransportData()
+                    }
+                } label: {
+                    Label("Recharger les données", systemImage: "arrow.clockwise")
+                        .padding()
                 }
+                .buttonStyle(.bordered)
+                .padding()
             } else {
                 ScrollView {
                     LazyVStack(spacing: 8) {
@@ -75,6 +84,13 @@ struct LineSelectionView: View {
         }
         .onAppear {
             viewModel.filterLines(query: viewModel.searchLineQuery)
+            
+            // Si aucune ligne n'est trouvée, vérifier si des données sont disponibles
+            if viewModel.filteredLines.isEmpty && !viewModel.isLoading {
+                Task {
+                    await viewModel.loadTransportData()
+                }
+            }
         }
     }
     
@@ -141,12 +157,12 @@ struct LineRow: View {
 
 // Extension pour convertir les chaînes de couleur hexadécimales en Color
 extension Color {
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+    init(hex: String?) {
+        let hexString = hex?.trimmingCharacters(in: CharacterSet.alphanumerics.inverted) ?? "007AFF"
         var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
+        Scanner(string: hexString).scanHexInt64(&int)
         let a, r, g, b: UInt64
-        switch hex.count {
+        switch hexString.count {
         case 3: // RGB (12-bit)
             (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
         case 6: // RGB (24-bit)

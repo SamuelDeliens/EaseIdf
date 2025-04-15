@@ -40,8 +40,8 @@ class DataPersistenceService {
         
         // Réduire la taille du lot pour commencer
         let batchSize = 50
-        for i in stride(from: 0, to: min(stops.count, 500), by: batchSize) { // Limiter temporairement à 500
-            let end = min(i + batchSize, min(stops.count, 500))
+        for i in stride(from: 0, to: stops.count, by: batchSize) {
+            let end = min(i + batchSize, stops.count)
             let batch = stops[i..<end]
             
             for stop in batch {
@@ -65,9 +65,8 @@ class DataPersistenceService {
     
     // Simplifier la recherche pour lignes spécifiques
     func fetchStopsForLine(lineId: String, context: ModelContext) throws -> [TransportStopModel] {
-        // Version simplifiée sans prédicat complexe
         let allStops = try fetchAllStops(context: context)
-        return allStops.filter { $0.lineRefs.contains(lineId) }
+        return allStops.filter { $0.lineRefs.contains("STIF:Line::\(lineId):") }
     }
     
     func searchStops(query: String, context: ModelContext) throws -> [TransportStopModel] {
@@ -88,8 +87,8 @@ class DataPersistenceService {
         
         // Réduire la taille du lot
         let batchSize = 200
-        for i in stride(from: 0, to: min(lines.count, 1000), by: batchSize) {
-            let end = min(i + batchSize, min(lines.count, 1000))
+        for i in stride(from: 0, to: lines.count, by: batchSize) {
+            let end = min(i + batchSize, lines.count)
             let batch = lines[i..<end]
             
             for line in batch {
@@ -120,18 +119,19 @@ class DataPersistenceService {
     func searchLines(query: String, mode: String?, context: ModelContext) throws -> [TransportLineModel] {
         let lines = try fetchAllLines(context: context)
         let lowercasedQuery = query.lowercased()
-        
+                        
         return lines.filter { line in
             let modeMatch = mode == nil || line.transportMode == mode
             
             let contentMatch =
+                lowercasedQuery == "" ||
                 line.name.lowercased().contains(lowercasedQuery) ||
                 line.shortName.lowercased().contains(lowercasedQuery) ||
                 line.id.lowercased().contains(lowercasedQuery) ||
                 (line.privateCode?.lowercased().contains(lowercasedQuery) ?? false) ||
                 line.operatorName.lowercased().contains(lowercasedQuery) ||
                 (line.shortGroupName?.lowercased().contains(lowercasedQuery) ?? false)
-            
+                        
             return modeMatch && contentMatch
         }
     }
