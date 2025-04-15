@@ -5,42 +5,56 @@
 //  Created by Samuel DELIENS on 14/04/2025.
 //
 
+
 import Foundation
 import Combine
+import SwiftData
 
 class LineDataService {
     static let shared = LineDataService()
     
-    private init() {
-        loadCachedData()
-    }
+    private init() {}
     
     // MARK: - Properties
-    
-    @Published private(set) var importedLines: [ImportedLine] = []
     @Published private(set) var isLoading = false
+    private var modelContainer: ModelContainer?
+    private var modelContext: ModelContext?
     
     // MARK: - Public Methods
     
-    /// Load lines from a local JSON file
+    /// Initialiser le conteneur de modèle SwiftData
+    func initializeModelContainer() {
+        if modelContainer == nil {
+            modelContainer = DataPersistenceService.shared.getTransportDataContainer()
+            modelContext = ModelContext(modelContainer!)
+        }
+    }
+    
+    /// Charger les lignes depuis un fichier JSON local
     func loadLinesFromFile(named filename: String) {
         isLoading = true
+        
+        // S'assurer que le contexte SwiftData est initialisé
+        initializeModelContainer()
+        
+        guard let modelContext = modelContext else {
+            print("Erreur: ModelContext n'est pas initialisé")
+            isLoading = false
+            return
+        }
         
         Task {
             do {
                 let lines = try await self.loadLinesFromJSONFile(named: filename)
+                
+                // Sauvegarder dans SwiftData
+                try await DataPersistenceService.shared.saveLines(lines, context: modelContext)
+                
                 DispatchQueue.main.async {
-                    self.importedLines = lines
-                    self.cacheImportedLines(lines)
-                    
-                    // Aussi convertir et cacher en tant qu'objets TransportLine pour compatibilité
-                    let transportLines = lines.map { $0.toTransportLine() }
-                    StorageService.shared.cacheTransportLines(transportLines)
-                    
                     self.isLoading = false
                 }
             } catch {
-                print("Error loading lines from JSON: \(error)")
+                print("Erreur lors du chargement des lignes depuis JSON: \(error)")
                 DispatchQueue.main.async {
                     self.isLoading = false
                 }
@@ -86,85 +100,115 @@ class LineDataService {
         let fields: ImportedLine
     }
     
-    
-    /// Get directions for a line based on shortname_groupoflines
-    func getDirectionsForLine(lineId: String) -> [LineDirection] {
-        guard let line = importedLines.first(where: { $0.id_line == lineId }),
-              let groupName = line.shortname_groupoflines else {
+    /// Obtenir toutes les lignes
+    func getAllLines() -> [ImportedLine] {
+        guard let modelContext = modelContext else {
+            print("Erreur: ModelContext n'est pas initialisé")
             return []
         }
         
-        // Most lines have directions in format "ORIGIN - DESTINATION"
-        let parts = groupName.split(separator: "-")
+        do {
+            let lineModels = try DataPersistenceService.shared.fetchAllLines(context: modelContext)
+            
+            // Convertir les modèles SwiftData en ImportedLine pour la compatibilité
+            return lineModels.map { $0.toImportedLine() }
+        } catch {
+            print("Erreur lors de la récupération des lignes: \(error)")
+            return []
+        }
+    }
+    
+    /// Get directions for a line based on shortname_groupoflines
+    func getDirectionsForLine(lineId: String) -> [LineDirection] {
+        guard let modelContext = modelContext else {
+            print("Erreur: ModelContext n'est pas initialisé")
+            return []
+        }
         
-        if parts.count >= 2 {
-            return parts.map { direction in
-                LineDirection(
-                    lineName: line.shortname_line,
-                    direction: direction.trimmingCharacters(in: .whitespacesAndNewlines),
-                    lineId: line.id_line,
-                    color: line.color,
-                    textColor: line.textColor,
-                    transportMode: line.transportModeEnum
-                )
+        do {
+            let predicate = #Predicate<TransportLineModel> { line in
+                line.id == lineId
             }
-        } else {
-            // If we can't split by dash, just use the whole group name as one direction
-            return [
-                LineDirection(
-                    lineName: line.shortname_line,
-                    direction: groupName.trimmingCharacters(in: .whitespacesAndNewlines),
-                    lineId: line.id_line,
-                    color: line.color,
-                    textColor: line.textColor,
-                    transportMode: line.transportModeEnum
-                )
-            ]
+            
+            let descriptor = FetchDescriptor<TransportLineModel>(predicate: predicate)
+            let lines = try modelContext.fetch(descriptor)
+            
+            guard let line = lines.first, let groupName = line.shortGroupName else {
+                return []
+            }
+            
+            // Most lines have directions in format "ORIGIN - DESTINATION"
+            let parts = groupName.split(separator: "-")
+            
+            if parts.count >= 2 {
+                return parts.map { direction in
+                    LineDirection(
+                        lineName: line.shortName,
+                        direction: direction.trimmingCharacters(in: .whitespacesAndNewlines),
+                        lineId: line.id,
+                        color: line.color,
+                        textColor: line.textColor,
+                        transportMode: TransportMode(rawValue: line.transportMode) ?? .other
+                    )
+                }
+            } else {
+                // If we can't split by dash, just use the whole group name as one direction
+                return [
+                    LineDirection(
+                        lineName: line.shortName,
+                        direction: groupName.trimmingCharacters(in: .whitespacesAndNewlines),
+                        lineId: line.id,
+                        color: line.color,
+                        textColor: line.textColor,
+                        transportMode: TransportMode(rawValue: line.transportMode) ?? .other
+                    )
+                ]
+            }
+        } catch {
+            print("Erreur lors de la récupération des directions pour la ligne: \(error)")
+            return []
         }
     }
     
     /// Filter lines by transport mode
     func getLinesByMode(_ mode: TransportMode?) -> [ImportedLine] {
-        if let mode = mode {
-            return importedLines.filter { $0.transportModeEnum == mode }
-        } else {
-            return importedLines
+        guard let modelContext = modelContext else {
+            print("Erreur: ModelContext n'est pas initialisé")
+            return []
+        }
+        
+        do {
+            if let mode = mode {
+                let lineModels = try DataPersistenceService.shared.fetchLinesByMode(mode: mode.rawValue, context: modelContext)
+                return lineModels.map { $0.toImportedLine() }
+            } else {
+                let lineModels = try DataPersistenceService.shared.fetchAllLines(context: modelContext)
+                return lineModels.map { $0.toImportedLine() }
+            }
+        } catch {
+            print("Erreur lors de la récupération des lignes par mode: \(error)")
+            return []
         }
     }
     
     /// Search lines by query
     func searchLines(query: String, mode: TransportMode? = nil) -> [ImportedLine] {
-        let lowercasedQuery = query.lowercased()
-        
-        let filteredByMode = getLinesByMode(mode)
-        
-        if query.isEmpty {
-            return filteredByMode
+        guard let modelContext = modelContext else {
+            print("Erreur: ModelContext n'est pas initialisé")
+            return []
         }
         
-        return filteredByMode.filter { line in
-            line.name_line.lowercased().contains(lowercasedQuery) ||
-            line.shortname_line.lowercased().contains(lowercasedQuery) ||
-            line.id_line.lowercased().contains(lowercasedQuery) ||
-            (line.privatecode?.lowercased().contains(lowercasedQuery) ?? false) ||
-            line.operatorname.lowercased().contains(lowercasedQuery) ||
-            (line.shortname_groupoflines?.lowercased().contains(lowercasedQuery) ?? false)
-        }
-    }
-    
-    // MARK: - Private Methods
-    
-    private func cacheImportedLines(_ lines: [ImportedLine]) {
-        if let encoded = try? JSONEncoder().encode(lines) {
-            UserDefaults.standard.set(encoded, forKey: "cachedImportedLines")
-            UserDefaults.standard.set(Date(), forKey: "importedLinesLastUpdated")
-        }
-    }
-    
-    private func loadCachedData() {
-        if let data = UserDefaults.standard.data(forKey: "cachedImportedLines"),
-           let lines = try? JSONDecoder().decode([ImportedLine].self, from: data) {
-            self.importedLines = lines
+        do {
+            let lineModels = try DataPersistenceService.shared.searchLines(
+                query: query,
+                mode: mode?.rawValue,
+                context: modelContext
+            )
+            
+            return lineModels.map { $0.toImportedLine() }
+        } catch {
+            print("Erreur lors de la recherche de lignes: \(error)")
+            return []
         }
     }
 }

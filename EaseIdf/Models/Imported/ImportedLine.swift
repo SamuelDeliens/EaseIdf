@@ -67,6 +67,61 @@ struct ImportedLine: Codable, Identifiable {
         case object([String: String])
     }
     
+    init(
+        id_line: String,
+        name_line: String,
+        shortname_line: String,
+        transportmode: String,
+        transportsubmode: String? = nil,
+        type: String? = nil,
+        operatorref: String,
+        operatorname: String,
+        additionaloperators: String? = nil,
+        networkname: String? = nil,
+        colourweb_hexa: String? = nil,
+        textcolourweb_hexa: String? = nil,
+        colourprint_cmjn: String? = nil,
+        textcolourprint_hexa: String? = nil,
+        accessibility: String? = nil,
+        audiblesigns_available: String? = nil,
+        visualsigns_available: String? = nil,
+        id_groupoflines: String? = nil,
+        shortname_groupoflines: String? = nil,
+        notice_title: String? = nil,
+        notice_text: String? = nil,
+        valid_fromdate: String? = nil,
+        valid_todate: String? = nil,
+        status: String? = nil,
+        privatecode: String? = nil
+    ) {
+        self.id_line = id_line
+        self.name_line = name_line
+        self.shortname_line = shortname_line
+        self.transportmode = transportmode
+        self.transportsubmode = transportsubmode
+        self.type = type
+        self.operatorref = operatorref
+        self.operatorname = operatorname
+        self.additionaloperators = additionaloperators
+        self.networkname = networkname
+        self.colourweb_hexa = colourweb_hexa
+        self.textcolourweb_hexa = textcolourweb_hexa
+        self.colourprint_cmjn = colourprint_cmjn
+        self.textcolourprint_hexa = textcolourprint_hexa
+        self.accessibility = accessibility
+        self.audiblesigns_available = audiblesigns_available
+        self.visualsigns_available = visualsigns_available
+        self.id_groupoflines = id_groupoflines
+        self.shortname_groupoflines = shortname_groupoflines
+        self.notice_title = notice_title
+        self.notice_text = notice_text
+        self.valid_fromdate = valid_fromdate
+        self.valid_todate = valid_todate
+        self.status = status
+        self.privatecode = privatecode
+        self._picto = nil
+    }
+    
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         

@@ -11,25 +11,31 @@ import SwiftData
 @main
 struct EaseIdfApp: App {
     var sharedModelContainer: ModelContainer = PersistenceService.shared.getModelContainer()
+    var transportDataContainer: ModelContainer = DataPersistenceService.shared.getTransportDataContainer()
 
     var body: some Scene {
-            WindowGroup {
-                ContentView()
-                    .onAppear {
-                        LocationService.shared.requestAuthorization()
-                        LocationService.shared.startLocationUpdates()
-                        
-                        LineDataService.shared.loadLinesFromFile(named: "transport_lines")
-                        StopDataService.shared.loadStopsFromFile(named: "transport_stops")
-                        
-                        let settings = StorageService.shared.getUserSettings()
-                        WidgetService.shared.scheduleBackgroundUpdates(interval: settings.refreshInterval)
-                        
-                        Task {
-                            await WidgetService.shared.refreshWidgetData()
-                        }
+        WindowGroup {
+            ContentView()
+                .onAppear {
+                    LocationService.shared.requestAuthorization()
+                    LocationService.shared.startLocationUpdates()
+                    
+                    // Initialiser les services SwiftData
+                    LineDataService.shared.initializeModelContainer()
+                    StopDataService.shared.initializeModelContainer()
+                    
+                    // Charger les données
+                    LineDataService.shared.loadLinesFromFile(named: "transport_lines")
+                    StopDataService.shared.loadStopsFromFile(named: "transport_stops")
+                    
+                    let settings = StorageService.shared.getUserSettings()
+                    WidgetService.shared.scheduleBackgroundUpdates(interval: settings.refreshInterval)
+                    
+                    Task {
+                        await WidgetService.shared.refreshWidgetData()
                     }
-            }
-            .modelContainer(sharedModelContainer)
+                }
         }
+        .modelContainer(sharedModelContainer)
+    }
 }
