@@ -35,7 +35,10 @@ class StopDataService {
         
         do {
             let data = try Data(contentsOf: url)
-            let stops = try JSONDecoder().decode([ImportedStop].self, from: data)
+            let decoder = JSONDecoder()
+            
+            // Décodage direct en tant que tableau d'ImportedStop
+            let stops = try decoder.decode([ImportedStop].self, from: data)
             self.importedStops = stops
             
             // Mettre en cache les données chargées
@@ -48,34 +51,6 @@ class StopDataService {
             isLoading = false
         } catch {
             print("Erreur lors du chargement des arrêts depuis JSON: \(error)")
-            isLoading = false
-        }
-    }
-    
-    /// Charger les arrêts depuis une chaîne JSON
-    func loadStopsFromJSONString(_ jsonString: String) {
-        isLoading = true
-        
-        guard let data = jsonString.data(using: .utf8) else {
-            print("Erreur: Impossible de convertir la chaîne JSON en données")
-            isLoading = false
-            return
-        }
-        
-        do {
-            let stops = try JSONDecoder().decode([ImportedStop].self, from: data)
-            self.importedStops = stops
-            
-            // Mettre en cache les données chargées
-            cacheImportedStops(stops)
-            
-            // Convertir et mettre en cache en tant qu'objets TransportStop pour compatibilité
-            let transportStops = stops.map { $0.toTransportStop() }
-            StorageService.shared.cacheTransportStops(transportStops)
-            
-            isLoading = false
-        } catch {
-            print("Erreur lors de l'analyse de la chaîne JSON: \(error)")
             isLoading = false
         }
     }

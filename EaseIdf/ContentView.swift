@@ -12,6 +12,7 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var authViewModel = AuthViewModel()
     @State private var showingSettings = false
+    @State private var showingAddTransport = false
     
     var body: some View {
         NavigationStack {
@@ -37,9 +38,20 @@ struct ContentView: View {
                             Image(systemName: "gear")
                         }
                     }
+                    
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button(action: {
+                            showingAddTransport = true
+                        }) {
+                            Image(systemName: "plus")
+                        }
+                    }
                 }
                 .sheet(isPresented: $showingSettings) {
                     SettingsView()
+                }
+                .sheet(isPresented: $showingAddTransport) {
+                    AddTransportView()
                 }
             } else {
                 // Authentication view
