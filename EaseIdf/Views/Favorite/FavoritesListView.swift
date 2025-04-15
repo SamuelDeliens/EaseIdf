@@ -17,8 +17,6 @@ struct FavoritesListView: View {
         VStack {
             if viewModel.favorites.isEmpty {
                 emptyStateView
-            } else if viewModel.activeFavorites.isEmpty {
-                noActiveView
             } else {
                 favoritesList
             }
@@ -63,8 +61,9 @@ struct FavoritesListView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 16) {
-                        ForEach(viewModel.activeFavorites) { favorite in
+                        ForEach(viewModel.favorites) { favorite in
                             let departures = viewModel.departures[favorite.id.uuidString] ?? []
+                            let isActive = viewModel.activeFavorites.contains(where: { $0.id == favorite.id })
                             
                             // Utilisation de SwipeActionView pour le swipe-to-delete
                             SwipeActionView(favorite: favorite, action: {
@@ -73,7 +72,15 @@ struct FavoritesListView: View {
                                     viewModel.removeFavorite(with: favorite.id)
                                 }
                             }) {
-                                FavoriteCardView(favorite: favorite, departures: departures)
+                                ZStack(alignment: .topTrailing) {
+                                    FavoriteCardView(favorite: favorite, departures: departures)
+                                    
+                                    // Badge pour indiquer si le favori est inactif
+                                    if !isActive {
+                                        inactiveBadge
+                                            .offset(x: 15, y: -15)
+                                    }
+                                }
                             }
                             .padding(.horizontal)
                         }
@@ -86,6 +93,20 @@ struct FavoritesListView: View {
                 }
             }
         }
+    }
+    
+    private var inactiveBadge: some View {
+        HStack {
+            Image(systemName: "moon.fill")
+                .font(.body)
+        }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 4)
+        .background(
+            Capsule()
+                .fill(Color.secondary.opacity(0.2))
+        )
+        .padding(8)
     }
     
     private var editableList: some View {
@@ -147,51 +168,6 @@ struct FavoritesListView: View {
                     .cornerRadius(10)
             }
             .padding(.top, 10)
-            
-            Spacer()
-        }
-    }
-    
-    private var noActiveView: some View {
-        VStack(spacing: 20) {
-            Spacer()
-            
-            Image(systemName: "moon.stars.fill")
-                .font(.system(size: 60))
-                .foregroundColor(.secondary)
-            
-            Text("Aucun favori actif")
-                .font(.title2)
-                .fontWeight(.bold)
-            
-            Text("Vos favoris sont configurés pour s'afficher à certains moments ou endroits spécifiques.")
-                .multilineTextAlignment(.center)
-                .foregroundColor(.secondary)
-                .padding(.horizontal)
-            
-            HStack(spacing: 16) {
-                Button {
-                    isEditing = true
-                } label: {
-                    Text("Gérer mes favoris")
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .background(Color.accentColor)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                }
-                
-                Button {
-                    showingAddTransport = true
-                } label: {
-                    Label("Ajouter", systemImage: "plus")
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                        .background(Color.green)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                }
-            }
             
             Spacer()
         }

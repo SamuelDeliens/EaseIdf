@@ -70,12 +70,34 @@ class FavoritesViewModel: ObservableObject {
         }
     }
     
+    // Dans FavoritesViewModel.swift
     func updateActiveFavorites() {
-        activeFavorites = ConditionEvaluationService.shared.getCurrentlyActiveTransportFavorites()
+        let conditionService = ConditionEvaluationService.shared
+        
+        // Déterminer quels favoris sont actifs selon les conditions
+        let activeIDs = Set(conditionService.getCurrentlyActiveTransportFavorites().map { $0.id })
+        
+        // Mettre à jour la liste des favoris actifs
+        activeFavorites = favorites.filter { activeIDs.contains($0.id) }
+        
+        // Trier les favoris (actifs en premier, puis par priorité)
+        favorites.sort { (fav1, fav2) -> Bool in
+            let isActive1 = activeIDs.contains(fav1.id)
+            let isActive2 = activeIDs.contains(fav2.id)
+            
+            if isActive1 && !isActive2 {
+                return true  // Actif avant inactif
+            } else if !isActive1 && isActive2 {
+                return false // Inactif après actif
+            } else {
+                // Si le même statut d'activité, trier par priorité
+                return fav1.priority > fav2.priority
+            }
+        }
     }
     
     func refreshDepartures() {
-        guard !activeFavorites.isEmpty else { return }
+        guard !favorites.isEmpty else { return }
         
         isLoading = true
         error = nil
@@ -85,24 +107,19 @@ class FavoritesViewModel: ObservableObject {
             var newDepartures: [String: [Departure]] = [:]
             
             do {
+                // D'abord récupérer les départs pour les favoris actifs
                 for favorite in activeFavorites {
-                    // Fetch departures for this favorite
-                    let favoriteDepartures = try await IDFMobiliteService.shared.fetchDepartures(
-                        for: favorite.stopId,
-                        lineId: favorite.lineId
-                    )
-                    
-                    // Sort by departure time
-                    let sortedDepartures = favoriteDepartures.sorted {
-                        $0.expectedDepartureTime < $1.expectedDepartureTime
-                    }
-                    
-                    // Limit number of departures based on user settings
-                    let settings = StorageService.shared.getUserSettings()
-                    let limitedDepartures = Array(sortedDepartures.prefix(settings.numberOfDeparturesToShow))
-                    
-                    // Store in dictionary with favorite id as key
-                    newDepartures[favorite.id.uuidString] = limitedDepartures
+                    try await fetchDeparturesForFavorite(favorite, into: &newDepartures)
+                }
+                
+                // Ensuite les favoris inactifs si le temps/la charge le permet
+                let inactiveFavorites = favorites.filter { favorite in
+                    !activeFavorites.contains(where: { activeFavorite in
+                        activeFavorite.id == favorite.id
+                    })
+                }
+                for favorite in inactiveFavorites {
+                    try? await fetchDeparturesForFavorite(favorite, into: &newDepartures)
                 }
                 
                 // Update published property on main thread
@@ -121,6 +138,26 @@ class FavoritesViewModel: ObservableObject {
                 }
             }
         }
+    }
+    
+    private func fetchDeparturesForFavorite(_ favorite: TransportFavorite, into departuresDict: inout [String: [Departure]]) async throws {
+        // Fetch departures for this favorite
+        let favoriteDepartures = try await IDFMobiliteService.shared.fetchDepartures(
+            for: favorite.stopId,
+            lineId: favorite.lineId
+        )
+        
+        // Sort by departure time
+        let sortedDepartures = favoriteDepartures.sorted {
+            $0.expectedDepartureTime < $1.expectedDepartureTime
+        }
+        
+        // Limit number of departures based on user settings
+        let settings = StorageService.shared.getUserSettings()
+        let limitedDepartures = Array(sortedDepartures.prefix(settings.numberOfDeparturesToShow))
+        
+        // Store in dictionary with favorite id as key
+        departuresDict[favorite.id.uuidString] = limitedDepartures
     }
     
     // MARK: - Timer Management
