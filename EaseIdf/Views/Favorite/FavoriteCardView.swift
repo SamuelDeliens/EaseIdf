@@ -99,28 +99,18 @@ struct FavoriteCardView: View {
                     }
                 }
             }
-            
-            // Expand button if there are multiple departures
-            if departures.count > 1 {
-                Button {
-                    withAnimation {
-                        isExpanded.toggle()
-                    }
-                } label: {
-                    HStack {
-                        Spacer()
-                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                            .foregroundColor(.secondary)
-                        Spacer()
-                    }
-                    .padding(.vertical, 6)
-                    .background(Color(.systemBackground))
-                }
-                .buttonStyle(PlainButtonStyle())
-            }
         }
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
+        // Rendre l'ensemble de la carte cliquable si plusieurs départs sont disponibles
+        .contentShape(Rectangle()) // Important pour la détection des clics sur toute la zone
+        .onTapGesture {
+            if departures.count > 1 {
+                withAnimation {
+                    isExpanded.toggle()
+                }
+            }
+        }
     }
     
     // Cette méthode est maintenant correctement placée à l'intérieur de la structure FavoriteCardView
