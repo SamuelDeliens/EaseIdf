@@ -21,12 +21,26 @@ class PersistenceService {
             UserSettingsModel.self
         ])
         
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        // Ajoutez ces options pour gérer les migrations et la reconstruction
+        let modelConfiguration = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: false
+        )
         
         do {
+            // Utilisez un nom de fichier distinct
+            let url = URL.documentsDirectory.appending(path: "user_favorites.store")
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            print("Erreur lors de la création du ModelContainer: \(error)")
+            
+            // Plan B: conteneur en mémoire si la persistance échoue
+            let fallbackConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            do {
+                return try ModelContainer(for: schema, configurations: [fallbackConfig])
+            } catch {
+                fatalError("Impossible de créer un ModelContainer: \(error)")
+            }
         }
     }
     

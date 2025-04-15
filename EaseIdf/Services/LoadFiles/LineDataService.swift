@@ -45,25 +45,39 @@ class LineDataService {
         
         Task {
             do {
-                let lines = try await self.loadLinesFromJSONFile(named: filename)
+                // Charger les lignes depuis le fichier JSON
+                let lines = try await loadLinesFromJSONFile(named: filename)
                 print("line data counted", lines.count)
                 
-                // Vérifier si nous sommes déjà sur le thread principal
-                if Thread.isMainThread {
-                    try await DataPersistenceService.shared.saveLines(lines, context: modelContext)
-                    self.isLoading = false
-                } else {
-                    // Sauvegarder dans SwiftData sur le thread principal
-                    await MainActor.run {
-                        Task {
-                            do {
-                                try await DataPersistenceService.shared.saveLines(lines, context: modelContext)
-                                self.isLoading = false
-                            } catch {
-                                print("Erreur lors de l'enregistrement des lignes: \(error)")
-                                self.isLoading = false
+                // Passer au thread principal pour interagir avec SwiftData
+                await MainActor.run {
+                    do {
+                        // Version synchrone de clearLines
+                        let descriptor = FetchDescriptor<TransportLineModel>()
+                        if let existingLines = try? modelContext.fetch(descriptor) {
+                            for line in existingLines {
+                                modelContext.delete(line)
                             }
                         }
+                        
+                        // Ajouter les lignes par lots
+                        let batchSize = 100
+                        for i in stride(from: 0, to: lines.count, by: batchSize) {
+                            let end = min(i + batchSize, lines.count)
+                            let batch = Array(lines[i..<end])
+                            
+                            for line in batch {
+                                let lineModel = TransportLineModel.fromImportedLine(line)
+                                modelContext.insert(lineModel)
+                            }
+                            
+                            try modelContext.save()
+                        }
+                        
+                        self.isLoading = false
+                    } catch {
+                        print("Erreur lors de l'enregistrement des lignes: \(error)")
+                        self.isLoading = false
                     }
                 }
             } catch {
