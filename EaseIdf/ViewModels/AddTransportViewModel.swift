@@ -53,8 +53,17 @@ class AddTransportViewModel: ObservableObject {
         case saveWithoutConditions
     }
     
+    enum ConditionSheetType {
+        case none
+        case timeRange
+        case dayOfWeek
+        case location
+    }
+        
     @Published var currentStep: AddTransportStep = .selectTransportMode
+    
     @Published var afterNamingStep: AddTransportStepAfterNaming = .saveWithoutConditions
+    @Published var activeConditionSheet: ConditionSheetType = .none
     
     private var cancellables = Set<AnyCancellable>()
     var modelContext: ModelContext?

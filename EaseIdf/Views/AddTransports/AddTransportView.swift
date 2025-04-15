@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 
+
 struct AddTransportView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -76,25 +77,6 @@ struct AddTransportView: View {
                 }
             } message: {
                 Text("Le transport a été ajouté à vos favoris.")
-            }
-            // Sheets pour la configuration des conditions
-            .sheet(isPresented: $viewModel.showingTimeRangeSheet) {
-                TimeRangeConditionView(
-                    viewModel: viewModel,
-                    editingIndex: viewModel.editingConditionIndex
-                )
-            }
-            .sheet(isPresented: $viewModel.showingDayOfWeekSheet) {
-                DayOfWeekConditionView(
-                    viewModel: viewModel,
-                    editingIndex: viewModel.editingConditionIndex
-                )
-            }
-            .sheet(isPresented: $viewModel.showingLocationSheet) {
-                LocationConditionView(
-                    viewModel: viewModel,
-                    editingIndex: viewModel.editingConditionIndex
-                )
             }
         }
     }

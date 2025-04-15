@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct TimeRangeConditionView: View {
-    @Environment(\.dismiss) private var dismiss
     @ObservedObject var viewModel: AddTransportViewModel
     
     // Pour l'édition d'une condition existante
@@ -45,47 +44,38 @@ struct TimeRangeConditionView: View {
     }
     
     var body: some View {
-        NavigationStack {
-            Form {
-                Section(header: Text("Plage horaire")) {
-                    DatePicker("Heure de début", selection: $startTime, displayedComponents: .hourAndMinute)
-                    DatePicker("Heure de fin", selection: $endTime, displayedComponents: .hourAndMinute)
+        Form {
+            Section(header: Text("Plage horaire")) {
+                DatePicker("Heure de début", selection: $startTime, displayedComponents: .hourAndMinute)
+                DatePicker("Heure de fin", selection: $endTime, displayedComponents: .hourAndMinute)
+            }
+            
+            Section(footer: Text("Cette condition sera active seulement pendant la plage horaire définie. Si l'heure de fin est antérieure à l'heure de début, la condition sera considérée comme s'étalant sur deux jours (par exemple, de 22:00 à 6:00).")) {
+                Button("Présélections") {
+                    showPresetOptions()
                 }
-                
-                Section(footer: Text("Cette condition sera active seulement pendant la plage horaire définie. Si l'heure de fin est antérieure à l'heure de début, la condition sera considérée comme s'étalant sur deux jours (par exemple, de 22:00 à 6:00).")) {
-                    Button("Présélections") {
-                        showPresetOptions()
-                    }
-                }
-                
-                Section {
-                    // Vérification de la validité des horaires
-                    if !isTimeRangeValid {
-                        HStack {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
-                            Text("L'heure de début et de fin ne peuvent pas être identiques.")
-                                .font(.caption)
-                                .foregroundColor(.orange)
-                        }
+            }
+            
+            Section {
+                // Vérification de la validité des horaires
+                if !isTimeRangeValid {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                        Text("L'heure de début et de fin ne peuvent pas être identiques.")
+                            .font(.caption)
+                            .foregroundColor(.orange)
                     }
                 }
             }
-            .navigationTitle("Configuration horaire")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") {
-                        dismiss()
-                    }
+            
+            Section {
+                Button("Enregistrer") {
+                    saveTimeRangeCondition()
                 }
-                
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Enregistrer") {
-                        saveTimeRangeCondition()
-                    }
-                    .disabled(!isTimeRangeValid)
-                }
+                .disabled(!isTimeRangeValid)
+                .frame(maxWidth: .infinity)
+                .buttonStyle(.borderedProminent)
             }
         }
     }
@@ -118,7 +108,8 @@ struct TimeRangeConditionView: View {
             viewModel.addCondition(newCondition)
         }
         
-        dismiss()
+        // Fermer le sheet
+        viewModel.closeConditionSheet()
     }
     
     private func showPresetOptions() {

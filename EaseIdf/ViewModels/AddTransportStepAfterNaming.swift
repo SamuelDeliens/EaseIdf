@@ -35,14 +35,14 @@ extension AddTransportViewModel {
         
         editingConditionIndex = index
         
-        // Ouvrir la sheet correspondante au type de condition
+        // Définir le type de sheet à afficher en fonction du type de condition
         switch displayConditions[index].type {
         case .timeRange:
-            showingTimeRangeSheet = true
+            activeConditionSheet = .timeRange
         case .dayOfWeek:
-            showingDayOfWeekSheet = true
+            activeConditionSheet = .dayOfWeek
         case .location:
-            showingLocationSheet = true
+            activeConditionSheet = .location
         }
     }
     
@@ -51,19 +51,24 @@ extension AddTransportViewModel {
     /// Ajouter une nouvelle condition de plage horaire
     func addTimeRangeCondition() {
         editingConditionIndex = nil
-        showingTimeRangeSheet = true
+        activeConditionSheet = .timeRange
     }
     
     /// Ajouter une nouvelle condition de jour de la semaine
     func addDayOfWeekCondition() {
         editingConditionIndex = nil
-        showingDayOfWeekSheet = true
+        activeConditionSheet = .dayOfWeek
     }
     
     /// Ajouter une nouvelle condition de localisation
     func addLocationCondition() {
         editingConditionIndex = nil
-        showingLocationSheet = true
+        activeConditionSheet = .location
+    }
+    
+    func closeConditionSheet() {
+        activeConditionSheet = .none
+        editingConditionIndex = nil
     }
     
     // MARK: - Méthodes pour mettre à jour des conditions existantes
@@ -96,6 +101,7 @@ extension AddTransportViewModel {
     }
     
     // MARK: - Méthodes pour enregistrer les conditions
+    
     
     /// Enregistrer les conditions configurées avec le favori
     func saveConditions() {

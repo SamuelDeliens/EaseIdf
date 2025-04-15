@@ -40,6 +40,71 @@ struct ConditionConfigurationView: View {
                 }
             }
         }
+        // Utiliser un fullScreenCover contrôlé par activeConditionSheet
+        .fullScreenCover(isPresented: Binding<Bool>(
+            get: { viewModel.activeConditionSheet != .none },
+            set: { if !$0 { viewModel.closeConditionSheet() } }
+        )) {
+            conditionSheetView
+        }
+    }
+    
+    // Vue pour le sheet de condition active
+    private var conditionSheetView: some View {
+        Group {
+            switch viewModel.activeConditionSheet {
+            case .timeRange:
+                NavigationStack {
+                    TimeRangeConditionView(
+                        viewModel: viewModel,
+                        editingIndex: viewModel.editingConditionIndex
+                    )
+                    .navigationTitle("Configuration horaire")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Retour") {
+                                viewModel.closeConditionSheet()
+                            }
+                        }
+                    }
+                }
+            case .dayOfWeek:
+                NavigationStack {
+                    DayOfWeekConditionView(
+                        viewModel: viewModel,
+                        editingIndex: viewModel.editingConditionIndex
+                    )
+                    .navigationTitle("Configuration des jours")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Retour") {
+                                viewModel.closeConditionSheet()
+                            }
+                        }
+                    }
+                }
+            case .location:
+                NavigationStack {
+                    LocationConditionView(
+                        viewModel: viewModel,
+                        editingIndex: viewModel.editingConditionIndex
+                    )
+                    .navigationTitle("Configuration de position")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Retour") {
+                                viewModel.closeConditionSheet()
+                            }
+                        }
+                    }
+                }
+            case .none:
+                EmptyView()
+            }
+        }
     }
     
     private var favoriteRecapSection: some View {

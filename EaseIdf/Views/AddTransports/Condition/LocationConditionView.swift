@@ -17,7 +17,6 @@ struct StopAnnotation: Identifiable {
 }
 
 struct LocationConditionView: View {
-    @Environment(\.dismiss) private var dismiss
     @ObservedObject var viewModel: AddTransportViewModel
     
     // Pour l'édition d'une condition existante
@@ -86,127 +85,118 @@ struct LocationConditionView: View {
     }
     
     var body: some View {
-        NavigationStack {
-            Form {
-                Section(header: Text("Emplacement")) {
-                    Toggle("Utiliser ma position actuelle", isOn: $isUsingCurrentLocation)
-                        .onChange(of: isUsingCurrentLocation) { isCurrentLocation in
-                            if isCurrentLocation {
-                                useCurrentLocation()
-                            } else if let stop = viewModel.selectedStop {
-                                // Revenir à l'arrêt sélectionné
-                                locationName = stop.name_stop
-                                selectedLocation = CLLocationCoordinate2D(
-                                    latitude: stop.latitude,
-                                    longitude: stop.longitude
-                                )
-                                centerMapOnSelectedLocation()
-                            }
-                        }
-                    
-                    if !isUsingCurrentLocation {
-                        HStack {
-                            TextField("Nom de l'emplacement", text: $locationName)
-                                .disabled(true) // Car on ne peut pas chercher d'autres emplacements pour le moment
-                            
-                            if selectedLocation != nil {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
-                            }
+        Form {
+            Section(header: Text("Emplacement")) {
+                Toggle("Utiliser ma position actuelle", isOn: $isUsingCurrentLocation)
+                    .onChange(of: isUsingCurrentLocation) { isCurrentLocation in
+                        if isCurrentLocation {
+                            useCurrentLocation()
+                        } else if let stop = viewModel.selectedStop {
+                            // Revenir à l'arrêt sélectionné
+                            locationName = stop.name_stop
+                            selectedLocation = CLLocationCoordinate2D(
+                                latitude: stop.latitude,
+                                longitude: stop.longitude
+                            )
+                            centerMapOnSelectedLocation()
                         }
                     }
-                    
-                    Button("Afficher sur la carte") {
-                        isMapVisible.toggle()
-                        if isMapVisible {
-                            centerMapOnSelectedLocation()
-                            loadStopAnnotations()
+                
+                if !isUsingCurrentLocation {
+                    HStack {
+                        TextField("Nom de l'emplacement", text: $locationName)
+                            .disabled(true) // Car on ne peut pas chercher d'autres emplacements pour le moment
+                        
+                        if selectedLocation != nil {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
                         }
                     }
                 }
                 
-                if isMapVisible {
-                    Section {
-                        ZStack {
-                            Map(coordinateRegion: $region, annotationItems: stopAnnotations) { annotation in
-                                MapAnnotation(coordinate: annotation.coordinate) {
-                                    ZStack {
+                Button("Afficher sur la carte") {
+                    isMapVisible.toggle()
+                    if isMapVisible {
+                        centerMapOnSelectedLocation()
+                        loadStopAnnotations()
+                    }
+                }
+            }
+            
+            if isMapVisible {
+                Section {
+                    ZStack {
+                        Map(coordinateRegion: $region, annotationItems: stopAnnotations) { annotation in
+                            MapAnnotation(coordinate: annotation.coordinate) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.white)
+                                        .frame(width: 28, height: 28)
+                                    
+                                    Circle()
+                                        .fill(Color.blue)
+                                        .frame(width: 20, height: 20)
+                                    
+                                    if annotation.isSelected {
                                         Circle()
-                                            .fill(Color.white)
-                                            .frame(width: 28, height: 28)
-                                        
-                                        Circle()
-                                            .fill(Color.blue)
-                                            .frame(width: 20, height: 20)
-                                        
-                                        if annotation.isSelected {
-                                            Circle()
-                                                .stroke(Color.orange, lineWidth: 3)
-                                                .frame(width: 36, height: 36)
-                                        }
-                                    }
-                                    .onTapGesture {
-                                        selectStop(annotation)
+                                            .stroke(Color.orange, lineWidth: 3)
+                                            .frame(width: 36, height: 36)
                                     }
                                 }
+                                .onTapGesture {
+                                    selectStop(annotation)
+                                }
                             }
-                            
-                            if let location = selectedLocation {
-                                Circle()
-                                    .fill(Color.orange.opacity(0.3))
-                                    .frame(width: CGFloat(radius * 2), height: CGFloat(radius * 2))
-                                    .position(convertCoordinateToPoint(location))
-                            }
-                        }
-                        .frame(height: 300)
-                        .cornerRadius(8)
-                    }
-                }
-                
-                Section(header: Text("Rayon de détection")) {
-                    VStack {
-                        Slider(value: $radius, in: 100...1000, step: 50) {
-                            Text("Rayon: \(Int(radius))m")
                         }
                         
-                        Text("Rayon: \(Int(radius)) mètres")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                Section(footer: Text("Cette condition sera active uniquement lorsque vous serez à proximité de l'emplacement défini, dans le rayon spécifié.")) {
-                    if selectedLocation == nil && !isUsingCurrentLocation {
-                        HStack {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
-                            Text("Sélectionnez un emplacement sur la carte ou utilisez votre position actuelle.")
-                                .font(.caption)
-                                .foregroundColor(.orange)
+                        if let location = selectedLocation {
+                            Circle()
+                                .fill(Color.orange.opacity(0.3))
+                                .frame(width: CGFloat(radius * 2), height: CGFloat(radius * 2))
+                                .position(convertCoordinateToPoint(location))
                         }
                     }
+                    .frame(height: 300)
+                    .cornerRadius(8)
                 }
             }
-            .navigationTitle("Configuration de position")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") {
-                        dismiss()
+            
+            Section(header: Text("Rayon de détection")) {
+                VStack {
+                    Slider(value: $radius, in: 100...1000, step: 50) {
+                        Text("Rayon: \(Int(radius))m")
                     }
-                }
-                
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Enregistrer") {
-                        saveLocationCondition()
-                    }
-                    .disabled(selectedLocation == nil && !isUsingCurrentLocation)
+                    
+                    Text("Rayon: \(Int(radius)) mètres")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
                 }
             }
-            .onAppear {
-                if isUsingCurrentLocation {
-                    useCurrentLocation()
+            
+            Section(footer: Text("Cette condition sera active uniquement lorsque vous serez à proximité de l'emplacement défini, dans le rayon spécifié.")) {
+                if selectedLocation == nil && !isUsingCurrentLocation {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                        Text("Sélectionnez un emplacement sur la carte ou utilisez votre position actuelle.")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    }
                 }
+            }
+            
+            Section {
+                Button("Enregistrer") {
+                    saveLocationCondition()
+                }
+                .disabled(selectedLocation == nil && !isUsingCurrentLocation)
+                .frame(maxWidth: .infinity)
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .onAppear {
+            if isUsingCurrentLocation {
+                useCurrentLocation()
             }
         }
     }
@@ -318,6 +308,7 @@ struct LocationConditionView: View {
             viewModel.addCondition(newCondition)
         }
         
-        dismiss()
+        // Fermer le sheet
+        viewModel.closeConditionSheet()
     }
 }

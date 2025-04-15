@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct DayOfWeekConditionView: View {
-    @Environment(\.dismiss) private var dismiss
     @ObservedObject var viewModel: AddTransportViewModel
     
     // Pour l'édition d'une condition existante
@@ -37,71 +36,62 @@ struct DayOfWeekConditionView: View {
     }
     
     var body: some View {
-        NavigationStack {
-            Form {
-                Section(header: Text("Sélectionnez les jours")) {
-                    ForEach(Weekday.allCases, id: \.self) { day in
-                        Toggle(isOn: Binding(
-                            get: { selectedDays.contains(day) },
-                            set: { isSelected in
-                                if isSelected {
-                                    selectedDays.insert(day)
-                                } else {
-                                    selectedDays.remove(day)
-                                }
+        Form {
+            Section(header: Text("Sélectionnez les jours")) {
+                ForEach(Weekday.allCases, id: \.self) { day in
+                    Toggle(isOn: Binding(
+                        get: { selectedDays.contains(day) },
+                        set: { isSelected in
+                            if isSelected {
+                                selectedDays.insert(day)
+                            } else {
+                                selectedDays.remove(day)
                             }
-                        )) {
-                            Text(dayName(day))
                         }
-                    }
-                }
-                
-                Section {
-                    Button("Tous les jours") {
-                        selectedDays = Set(Weekday.allCases)
-                    }
-                    
-                    Button("Jours ouvrés (Lun-Ven)") {
-                        selectedDays = [.monday, .tuesday, .wednesday, .thursday, .friday]
-                    }
-                    
-                    Button("Week-end (Sam-Dim)") {
-                        selectedDays = [.saturday, .sunday]
-                    }
-                    
-                    Button("Aucun jour") {
-                        selectedDays = []
-                    }
-                }
-                
-                Section(footer: Text("Cette condition sera active uniquement les jours sélectionnés.")) {
-                    // Vérification de la validité
-                    if selectedDays.isEmpty {
-                        HStack {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
-                            Text("Sélectionnez au moins un jour.")
-                                .font(.caption)
-                                .foregroundColor(.orange)
-                        }
+                    )) {
+                        Text(dayName(day))
                     }
                 }
             }
-            .navigationTitle("Configuration des jours")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Annuler") {
-                        dismiss()
-                    }
+            
+            Section {
+                Button("Tous les jours") {
+                    selectedDays = Set(Weekday.allCases)
                 }
                 
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Enregistrer") {
-                        saveDayOfWeekCondition()
-                    }
-                    .disabled(selectedDays.isEmpty)
+                Button("Jours ouvrés (Lun-Ven)") {
+                    selectedDays = [.monday, .tuesday, .wednesday, .thursday, .friday]
                 }
+                
+                Button("Week-end (Sam-Dim)") {
+                    selectedDays = [.saturday, .sunday]
+                }
+                
+                Button("Aucun jour") {
+                    selectedDays = []
+                }
+            }
+            
+            Section(footer: Text("Cette condition sera active uniquement les jours sélectionnés.")) {
+                // Vérification de la validité
+                if selectedDays.isEmpty {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                        Text("Sélectionnez au moins un jour.")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    }
+                }
+            }
+            
+            Section {
+                Button("Enregistrer") {
+                    saveDayOfWeekCondition()
+                }
+                .disabled(selectedDays.isEmpty)
+                .frame(maxWidth: .infinity)
+                .buttonStyle(.borderedProminent)
             }
         }
     }
@@ -136,6 +126,7 @@ struct DayOfWeekConditionView: View {
             viewModel.addCondition(newCondition)
         }
         
-        dismiss()
+        // Fermer le sheet
+        viewModel.closeConditionSheet()
     }
 }
