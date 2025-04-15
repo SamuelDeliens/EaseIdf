@@ -11,6 +11,7 @@ import SwiftData
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var authViewModel = AuthViewModel()
+    @StateObject private var favoritesViewModel = FavoritesViewModel()
     @State private var showingSettings = false
     @State private var showingAddTransport = false
     
@@ -18,16 +19,8 @@ struct ContentView: View {
         NavigationStack {
             if authViewModel.isAuthenticated {
                 VStack {
-                    Text("Mes Transports")
-                        .font(.largeTitle)
-                        .padding()
-                    
-                    Spacer()
-                    
-                    Text("Vos favoris apparaîtront ici")
-                        .foregroundColor(.secondary)
-                    
-                    Spacer()
+                    // Affichage de la liste des favoris
+                    FavoritesListView(viewModel: favoritesViewModel)
                 }
                 .navigationTitle("EaseIdf")
                 .toolbar {
@@ -52,6 +45,14 @@ struct ContentView: View {
                 }
                 .sheet(isPresented: $showingAddTransport) {
                     AddTransportView()
+                        .onDisappear {
+                            // Refresh favorites when the sheet is dismissed
+                            favoritesViewModel.loadFavorites()
+                        }
+                }
+                .onAppear {
+                    // Pass the model context to the favorites view model
+                    favoritesViewModel.setModelContext(modelContext)
                 }
             } else {
                 // Authentication view
