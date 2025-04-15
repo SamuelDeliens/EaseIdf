@@ -88,7 +88,7 @@ final class TransportLineModel {
     static func fromImportedLine(_ line: ImportedLine) -> TransportLineModel {
         return TransportLineModel(
             id: line.id_line,
-            name: line.name_line,
+            name: line.name_line.isEmpty ? line.shortname_line : line.name_line,
             shortName: line.shortname_line,
             privateCode: line.privatecode,
             transportMode: line.transportmode,

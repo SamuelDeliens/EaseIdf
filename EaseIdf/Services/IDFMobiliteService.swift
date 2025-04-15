@@ -58,19 +58,29 @@ class IDFMobiliteService {
         
         var request = URLRequest(url: url)
         request.addValue(apiKey, forHTTPHeaderField: "apikey")
+        request.timeoutInterval = 15 // Timeout raisonnable
         
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             
-            guard let httpResponse = response as? HTTPURLResponse,
-                  (200...299).contains(httpResponse.statusCode) else {
+            guard let httpResponse = response as? HTTPURLResponse else {
                 throw IDFMobiliteError.invalidResponse
             }
             
-            // Parse the response and convert to Departure objects
-            // Note: Actual parsing will depend on the exact JSON structure
-            return try parseStopMonitoringResponse(data)
-            
+            switch httpResponse.statusCode {
+            case 200...299:
+                return try parseStopMonitoringResponse(data)
+            case 401, 403:
+                throw IDFMobiliteError.apiError("Clé API invalide")
+            case 404:
+                throw IDFMobiliteError.apiError("Ressource non trouvée")
+            case 429:
+                throw IDFMobiliteError.apiError("Trop de requêtes")
+            case 500...599:
+                throw IDFMobiliteError.apiError("Erreur serveur")
+            default:
+                throw IDFMobiliteError.apiError("Erreur HTTP \(httpResponse.statusCode)")
+            }
         } catch let error as IDFMobiliteError {
             throw error
         } catch {

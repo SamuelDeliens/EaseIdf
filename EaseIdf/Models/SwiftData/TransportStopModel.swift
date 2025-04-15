@@ -20,17 +20,26 @@ final class TransportStopModel {
     
     var lineRefs: [String] {
         get {
-            if let data = lineRefsJSON.data(using: .utf8),
-               let array = try? JSONDecoder().decode([String].self, from: data) {
-                return array
+            do {
+                if let data = lineRefsJSON.data(using: .utf8),
+                   let array = try JSONDecoder().decode([String]?.self, from: data) {
+                    return array
+                }
+            } catch {
+                print("Error decoding lineRefs: \(error)")
             }
             return []
         }
         set {
-            if let data = try? JSONEncoder().encode(newValue),
-               let jsonString = String(data: data, encoding: .utf8) {
-                lineRefsJSON = jsonString
-            } else {
+            do {
+                let data = try JSONEncoder().encode(newValue)
+                if let jsonString = String(data: data, encoding: .utf8) {
+                    lineRefsJSON = jsonString
+                } else {
+                    lineRefsJSON = "[]"
+                }
+            } catch {
+                print("Error encoding lineRefs: \(error)")
                 lineRefsJSON = "[]"
             }
         }

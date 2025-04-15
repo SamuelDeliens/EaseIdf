@@ -41,13 +41,14 @@ struct EaseIdfApp: App {
     
     // Initialisation des services
     private func initializeServices() {
-        // Initialiser les services SwiftData
-        LineDataService.shared.initializeModelContainer()
-        StopDataService.shared.initializeModelContainer()
-        
-        // Planifier les mises à jour du widget
-        let settings = StorageService.shared.getUserSettings()
-        WidgetService.shared.scheduleBackgroundUpdates(interval: settings.refreshInterval)
+        Task {
+            LineDataService.shared.initializeModelContainer()
+            StopDataService.shared.initializeModelContainer()
+            
+            // Planifier les mises à jour du widget
+            let settings = StorageService.shared.getUserSettings()
+            WidgetService.shared.scheduleBackgroundUpdates(interval: settings.refreshInterval)
+        }
     }
     
     // Chargement des données de transport si nécessaire

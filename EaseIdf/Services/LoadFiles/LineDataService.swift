@@ -48,15 +48,27 @@ class LineDataService {
                 let lines = try await self.loadLinesFromJSONFile(named: filename)
                 print("line data counted", lines.count)
                 
-                // Sauvegarder dans SwiftData
-                try await DataPersistenceService.shared.saveLines(lines, context: modelContext)
-                
-                DispatchQueue.main.async {
+                // Vérifier si nous sommes déjà sur le thread principal
+                if Thread.isMainThread {
+                    try await DataPersistenceService.shared.saveLines(lines, context: modelContext)
                     self.isLoading = false
+                } else {
+                    // Sauvegarder dans SwiftData sur le thread principal
+                    await MainActor.run {
+                        Task {
+                            do {
+                                try await DataPersistenceService.shared.saveLines(lines, context: modelContext)
+                                self.isLoading = false
+                            } catch {
+                                print("Erreur lors de l'enregistrement des lignes: \(error)")
+                                self.isLoading = false
+                            }
+                        }
+                    }
                 }
             } catch {
                 print("Erreur lors du chargement des lignes depuis JSON: \(error)")
-                DispatchQueue.main.async {
+                await MainActor.run {
                     self.isLoading = false
                 }
             }

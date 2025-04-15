@@ -75,25 +75,36 @@ class AddTransportViewModel: ObservableObject {
     
     // Filtrer les lignes en fonction du mode de transport et de la requête
     func filterLines(query: String) {
-        if let mode = selectedTransportMode {
-            self.filteredLines = LineDataService.shared.searchLines(query: query, mode: mode)
-        } else {
-            self.filteredLines = LineDataService.shared.searchLines(query: query)
+        if isLoading {
+            return
+        }
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, !self.isLoading else { return }
+            
+            if let mode = self.selectedTransportMode {
+                self.filteredLines = LineDataService.shared.searchLines(query: query, mode: mode)
+            } else {
+                self.filteredLines = LineDataService.shared.searchLines(query: query)
+            }
         }
     }
     
     // Filtrer les arrêts pour la ligne sélectionnée
     func filterStops(query: String) {
-        guard let line = selectedLine else { return }
-        
-        let stopsForLine = StopDataService.shared.getStopsForLine(lineId: line.id_line)
-        
-        if query.isEmpty {
-            self.filteredStops = stopsForLine
-        } else {
-            self.filteredStops = stopsForLine.filter { stop in
-                stop.name_stop.lowercased().contains(query.lowercased()) ||
-                stop.id_stop.lowercased().contains(query.lowercased())
+        // Exécuter sur le thread principal car les opérations SwiftData doivent y rester
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self, let line = self.selectedLine, !self.isLoading else { return }
+            
+            let stopsForLine = StopDataService.shared.getStopsForLine(lineId: line.id_line)
+            
+            if query.isEmpty {
+                self.filteredStops = stopsForLine
+            } else {
+                self.filteredStops = stopsForLine.filter { stop in
+                    stop.name_stop.lowercased().contains(query.lowercased()) ||
+                    stop.id_stop.lowercased().contains(query.lowercased())
+                }
             }
         }
     }

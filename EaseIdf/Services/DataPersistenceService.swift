@@ -20,16 +20,23 @@ class DataPersistenceService {
             TransportLineModel.self
         ])
         
-        // Utiliser une configuration en mémoire pour débloquer le build
+        // Utiliser un stockage persistant pour les données de transport
         let modelConfiguration = ModelConfiguration(
             schema: schema,
-            isStoredInMemoryOnly: true  // Temporairement en mémoire pour débloquer
+            isStoredInMemoryOnly: false
         )
         
         do {
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
-            fatalError("Could not create ModelContainer for transport data: \(error)")
+            print("Could not create ModelContainer for transport data: \(error)")
+            // Fallback à un conteneur en mémoire en cas d'échec
+            let fallbackConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            do {
+                return try ModelContainer(for: schema, configurations: [fallbackConfig])
+            } catch {
+                fatalError("Could not create any ModelContainer: \(error)")
+            }
         }
     }
     
@@ -70,15 +77,15 @@ class DataPersistenceService {
     }
     
     func searchStops(query: String, context: ModelContext) throws -> [TransportStopModel] {
-        // Simplifier pour le débogage
-        let descriptor = FetchDescriptor<TransportStopModel>()
-        let stops = try context.fetch(descriptor)
-        
         let lowercasedQuery = query.lowercased()
-        return stops.filter {
-            $0.name.lowercased().contains(lowercasedQuery) ||
-            $0.id.lowercased().contains(lowercasedQuery)
+        
+        let predicate = #Predicate<TransportStopModel> { stop in
+            stop.name.localizedStandardContains(lowercasedQuery) ||
+            stop.id.localizedStandardContains(lowercasedQuery)
         }
+        
+        let descriptor = FetchDescriptor<TransportStopModel>(predicate: predicate)
+        return try context.fetch(descriptor)
     }
     
     // Méthodes pour gérer les lignes - version simplifiée
@@ -117,21 +124,28 @@ class DataPersistenceService {
     }
     
     func searchLines(query: String, mode: String?, context: ModelContext) throws -> [TransportLineModel] {
-        let lines = try fetchAllLines(context: context)
-        let lowercasedQuery = query.lowercased()
-                        
-        return lines.filter { line in
+        let descriptor = FetchDescriptor<TransportLineModel>()
+        let allLines = try context.fetch(descriptor)
+        
+        // Puis filtrer en mémoire (plus sûr que les prédicats complexes)
+        return allLines.filter { line in
+            // Filtrer par mode si spécifié
             let modeMatch = mode == nil || line.transportMode == mode
             
-            let contentMatch =
-                lowercasedQuery == "" ||
-                line.name.lowercased().contains(lowercasedQuery) ||
-                line.shortName.lowercased().contains(lowercasedQuery) ||
-                line.id.lowercased().contains(lowercasedQuery) ||
-                (line.privateCode?.lowercased().contains(lowercasedQuery) ?? false) ||
-                line.operatorName.lowercased().contains(lowercasedQuery) ||
-                (line.shortGroupName?.lowercased().contains(lowercasedQuery) ?? false)
-                        
+            // Si la requête est vide, filtrer uniquement par mode
+            if query.isEmpty {
+                return modeMatch
+            }
+            
+            // Sinon, filtrer par requête et mode
+            let lowercasedQuery = query.lowercased()
+            let contentMatch = line.name.lowercased().contains(lowercasedQuery) ||
+                               line.shortName.lowercased().contains(lowercasedQuery) ||
+                               line.id.lowercased().contains(lowercasedQuery) ||
+                               (line.privateCode?.lowercased().contains(lowercasedQuery) ?? false) ||
+                               line.operatorName.lowercased().contains(lowercasedQuery) ||
+                               (line.shortGroupName?.lowercased().contains(lowercasedQuery) ?? false)
+            
             return modeMatch && contentMatch
         }
     }

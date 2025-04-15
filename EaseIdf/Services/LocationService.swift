@@ -31,7 +31,22 @@ class LocationService: NSObject {
     
     /// Request location permissions
     func requestAuthorization() {
-        locationManager.requestWhenInUseAuthorization()
+        switch locationManager.authorizationStatus {
+        case .notDetermined:
+            locationManager.requestWhenInUseAuthorization()
+        case .restricted, .denied:
+            // Informer l'utilisateur que les autorisations sont nécessaires
+            locationError = NSError(
+                domain: "LocationServiceError",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "L'accès à la localisation est nécessaire pour afficher les transports à proximité."]
+            )
+        case .authorizedWhenInUse, .authorizedAlways:
+            // Déjà autorisé, commencer les mises à jour
+            locationManager.startUpdatingLocation()
+        @unknown default:
+            locationManager.requestWhenInUseAuthorization()
+        }
     }
     
     /// Start location updates with a specified interval
