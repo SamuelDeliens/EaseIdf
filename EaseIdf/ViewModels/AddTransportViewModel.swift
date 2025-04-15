@@ -198,33 +198,28 @@ class AddTransportViewModel: ObservableObject {
         
         // Enregistrer le favori dans SwiftData
         if let modelContext = modelContext {
-            // Créer le modèle sur le thread principal
-            DispatchQueue.main.async {
-                // Utiliser SwiftData pour l'enregistrement
+            do {
+                // Vérifier si le modèle existe dans le contexte
+                let descriptor = FetchDescriptor<TransportFavoriteModel>()
+                _ = try modelContext.fetch(descriptor)
+                
+                // Si aucune erreur, alors nous pouvons insérer
                 let favoriteModel = TransportFavoriteModel.fromStruct(favorite)
                 modelContext.insert(favoriteModel)
                 
-                do {
-                    try modelContext.save()
-                    print("Favori enregistré avec succès dans SwiftData")
-                } catch {
-                    // En cas d'erreur, utiliser le stockage de secours
-                    print("Erreur lors de l'enregistrement du favori dans SwiftData: \(error)")
-                    StorageService.shared.saveFavorite(favorite)
-                    print("Favori enregistré avec le système de secours")
-                }
-                
-                self.isSaving = false
-                self.favoriteCreated = true
+                try modelContext.save()
+                print("Favori enregistré avec succès dans SwiftData")
+            } catch {
+                print("Erreur lors de l'enregistrement du favori dans SwiftData: \(error)")
+                print("Fallback vers UserDefaults déjà effectué")
             }
         } else {
-            // Fallback vers l'ancien système
             StorageService.shared.saveFavorite(favorite)
-            
-            DispatchQueue.main.async {
-                self.isSaving = false
-                self.favoriteCreated = true
-            }
+        }
+        
+        DispatchQueue.main.async {
+            self.isSaving = false
+            self.favoriteCreated = true
         }
     }
     

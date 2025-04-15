@@ -25,12 +25,10 @@ struct EaseIdfApp: App {
         WindowGroup {
             ContentView()
                 .onAppear {
-                    // Demander les autorisations de localisation
-                    LocationService.shared.requestAuthorization()
-                    LocationService.shared.startLocationUpdates()
-                    
-                    // Charger des données si nécessaire
                     Task {
+                        LocationService.shared.requestAuthorization()
+                        LocationService.shared.startLocationUpdates()
+                    
                         await loadTransportDataIfNeeded()
                         await WidgetService.shared.refreshWidgetData()
                     }

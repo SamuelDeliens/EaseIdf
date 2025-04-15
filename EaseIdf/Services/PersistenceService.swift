@@ -21,25 +21,35 @@ class PersistenceService {
             UserSettingsModel.self
         ])
         
+        let url = URL.documentsDirectory.appending(path: "user_favorites.store")
+
         // Ajoutez ces options pour gérer les migrations et la reconstruction
         let modelConfiguration = ModelConfiguration(
             schema: schema,
-            isStoredInMemoryOnly: false
+            url: url,
+            allowsSave: true,
+            cloudKitDatabase: .automatic
         )
         
         do {
-            // Utilisez un nom de fichier distinct
-            let url = URL.documentsDirectory.appending(path: "user_favorites.store")
             return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
             print("Erreur lors de la création du ModelContainer: \(error)")
             
-            // Plan B: conteneur en mémoire si la persistance échoue
-            let fallbackConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            try? FileManager.default.removeItem(at: url)
+            
             do {
-                return try ModelContainer(for: schema, configurations: [fallbackConfig])
+                return try ModelContainer(for: schema, configurations: [modelConfiguration])
             } catch {
-                fatalError("Impossible de créer un ModelContainer: \(error)")
+                print("Erreur critique après tentative de reconstruction: \(error)")
+                
+                // Dernier recours: stocker en mémoire
+                let fallbackConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+                do {
+                    return try ModelContainer(for: schema, configurations: [fallbackConfig])
+                } catch {
+                    fatalError("Impossible de créer un ModelContainer: \(error)")
+                }
             }
         }
     }
