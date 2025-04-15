@@ -2,7 +2,7 @@
 //  FavoritesListView.swift
 //  EaseIdf
 //
-//  Created by Claude on 15/04/2025.
+//  Created by Samuel DELIENS on 14/04/2025.
 //
 
 import SwiftUI
@@ -65,8 +65,17 @@ struct FavoritesListView: View {
                     LazyVStack(spacing: 16) {
                         ForEach(viewModel.activeFavorites) { favorite in
                             let departures = viewModel.departures[favorite.id.uuidString] ?? []
-                            FavoriteCardView(favorite: favorite, departures: departures)
-                                .padding(.horizontal)
+                            
+                            // Utilisation de SwipeActionView pour le swipe-to-delete
+                            SwipeActionView(favorite: favorite, action: {
+                                // Action à exécuter lors de la suppression
+                                withAnimation {
+                                    viewModel.removeFavorite(with: favorite.id)
+                                }
+                            }) {
+                                FavoriteCardView(favorite: favorite, departures: departures)
+                            }
+                            .padding(.horizontal)
                         }
                     }
                     .padding(.vertical)

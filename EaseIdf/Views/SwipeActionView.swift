@@ -14,6 +14,7 @@ struct SwipeActionView<Content: View>: View {
     
     @State private var offset: CGFloat = 0
     @State private var showingDeleteAlert = false
+    @State private var isSwiped = false
     
     init(favorite: TransportFavorite, action: @escaping () -> Void, @ViewBuilder content: () -> Content) {
         self.favorite = favorite
@@ -46,6 +47,9 @@ struct SwipeActionView<Content: View>: View {
                             // Permettre uniquement le glissement vers la gauche
                             if value.translation.width < 0 {
                                 offset = value.translation.width
+                                
+                                // Si l'offset est significatif, marquer comme "swiped"
+                                isSwiped = offset < -10
                             }
                         }
                         .onEnded { value in
@@ -53,24 +57,33 @@ struct SwipeActionView<Content: View>: View {
                                 // Si glissé assez loin, afficher l'alerte de confirmation
                                 if value.translation.width < -100 {
                                     showingDeleteAlert = true
+                                    isSwiped = true
+                                } else {
+                                    // Remettre à zéro si pas assez glissé
+                                    offset = 0
+                                    isSwiped = false
                                 }
-                                // Remettre à zéro dans tous les cas
-                                offset = 0
                             }
                         }
                 )
-        }
-        .alert(isPresented: $showingDeleteAlert) {
-            Alert(
-                title: Text("Supprimer ce favori ?"),
-                message: Text("Êtes-vous sûr de vouloir supprimer \"\(favorite.displayName)\" de vos favoris ?"),
-                primaryButton: .destructive(Text("Supprimer")) {
-                    withAnimation {
-                        action()
-                    }
-                },
-                secondaryButton: .cancel(Text("Annuler"))
-            )
+                .alert(isPresented: $showingDeleteAlert) {
+                    Alert(
+                        title: Text("Supprimer ce favori ?"),
+                        message: Text("Êtes-vous sûr de vouloir supprimer \"\(favorite.displayName)\" de vos favoris ?"),
+                        primaryButton: .destructive(Text("Supprimer")) {
+                            withAnimation {
+                                action()
+                            }
+                        },
+                        secondaryButton: .cancel(Text("Annuler")) {
+                            withAnimation(.spring()) {
+                                // Remettre à zéro l'offset si l'utilisateur annule
+                                offset = 0
+                                isSwiped = false
+                            }
+                        }
+                    )
+                }
         }
     }
 }

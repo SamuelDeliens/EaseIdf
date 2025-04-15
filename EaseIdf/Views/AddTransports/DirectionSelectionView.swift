@@ -2,7 +2,7 @@
 //  DirectionSelectionView.swift
 //  EaseIdf
 //
-//  Created by Claude on 15/04/2025.
+//  Created by Samuel DELIENS on 14/04/2025.
 //
 
 import SwiftUI

@@ -2,7 +2,7 @@
 //  FavoritesViewModel.swift
 //  EaseIdf
 //
-//  Created by Claude on 15/04/2025.
+//  Created by Samuel DELIENS on 14/04/2025.
 //
 
 import Foundation
@@ -179,6 +179,49 @@ class FavoritesViewModel: ObservableObject {
                 // Fallback to StorageService
                 StorageService.shared.removeFavorite(id: favorite.id)
                 favorites.remove(at: index)
+                updateActiveFavorites()
+            }
+        }
+    }
+    
+    func removeFavorite(with id: UUID) {
+        guard let modelContext = modelContext else {
+            return
+        }
+        
+        // Trouver l'index du favori dans le tableau
+        if let index = favorites.firstIndex(where: { $0.id == id }) {
+            let favorite = favorites[index]
+            
+            // Supprimer de SwiftData
+            do {
+                let descriptor = FetchDescriptor<TransportFavoriteModel>(
+                    predicate: #Predicate { $0.id == id }
+                )
+                let models = try modelContext.fetch(descriptor)
+                
+                if let model = models.first {
+                    modelContext.delete(model)
+                    try modelContext.save()
+                }
+                
+                // Supprimer également de StorageService pour la compatibilité
+                StorageService.shared.removeFavorite(id: id)
+                
+                // Mettre à jour les tableaux locaux
+                favorites.remove(at: index)
+                updateActiveFavorites()
+                
+                // Rafraîchir les données du widget après suppression
+                Task {
+                    await WidgetService.shared.refreshWidgetData()
+                }
+                
+            } catch {
+                print("Error removing favorite by ID: \(error)")
+                // Solution de repli vers StorageService
+                StorageService.shared.removeFavorite(id: id)
+                favorites.removeAll(where: { $0.id == id })
                 updateActiveFavorites()
             }
         }
