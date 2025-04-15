@@ -56,6 +56,8 @@ class IDFMobiliteService {
             throw IDFMobiliteError.invalidURL
         }
         
+        print("Sending request to URL: \(url.absoluteString)")
+        
         var request = URLRequest(url: url)
         request.addValue(apiKey, forHTTPHeaderField: "apikey")
         request.timeoutInterval = 15 // Timeout raisonnable
@@ -67,8 +69,11 @@ class IDFMobiliteService {
                 throw IDFMobiliteError.invalidResponse
             }
             
+            print("Response status code: \(httpResponse.statusCode)")
+            
             switch httpResponse.statusCode {
             case 200...299:
+                // Essayer de parser les données
                 return try parseStopMonitoringResponse(data)
             case 401, 403:
                 throw IDFMobiliteError.apiError("Clé API invalide")
@@ -82,8 +87,10 @@ class IDFMobiliteService {
                 throw IDFMobiliteError.apiError("Erreur HTTP \(httpResponse.statusCode)")
             }
         } catch let error as IDFMobiliteError {
+            print("IDFMobilite error: \(error)")
             throw error
         } catch {
+            print("Network error: \(error)")
             throw IDFMobiliteError.networkError(error)
         }
     }
@@ -138,46 +145,22 @@ class IDFMobiliteService {
     
     private func parseStopMonitoringResponse(_ data: Data) throws -> [Departure] {
         do {
-            // This is a simplified parser and should be adjusted based on the actual response format
+            // Décodage de la réponse au format SIRI
             let decoder = JSONDecoder()
-            let response = try decoder.decode(StopMonitoringResponse.self, from: data)
+            let siriResponse = try decoder.decode(SIRIResponse.self, from: data)
             
-            // Convert the response to our internal Departure model
-            var departures: [Departure] = []
+            print("siriResponse: ", siriResponse)
             
-            if let visits = response.monitoredStopVisits {
-                for visit in visits {
-                    if let lineRef = visit.lineRef,
-                       let stopRef = visit.monitoringRef,
-                       let destination = visit.destinationName,
-                       let expectedDepartureTimeString = visit.expectedDepartureTime {
-                        
-                        // Extract IDs from the refs
-                        let lineId = extractId(from: lineRef)
-                        let stopId = extractId(from: stopRef)
-                        
-                        // Parse the departure time
-                        let dateFormatter = ISO8601DateFormatter()
-                        guard let expectedDepartureTime = dateFormatter.date(from: expectedDepartureTimeString) else {
-                            continue
-                        }
-                        
-                        let departure = Departure(
-                            stopId: stopId,
-                            lineId: lineId,
-                            destination: destination,
-                            expectedDepartureTime: expectedDepartureTime,
-                            aimedDepartureTime: nil,
-                            vehicleJourneyName: nil
-                        )
-                        
-                        departures.append(departure)
-                    }
-                }
+            // Conversion en array de Departure
+            return siriResponse.toDepartures()
+        } catch {
+            print("Erreur de décodage: \(error)")
+            
+            // Si l'erreur est liée au décodage, essayons d'imprimer la réponse brute pour le débogage
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("Réponse brute: \(responseString.prefix(500))...") // Limiter pour éviter un log trop long
             }
             
-            return departures
-        } catch {
             throw IDFMobiliteError.decodingError
         }
     }
