@@ -32,6 +32,13 @@ class AddTransportViewModel: ObservableObject {
     @Published var filteredStops: [ImportedStop] = []
     @Published var availableDirections: [LineDirection] = []
     
+    // Propriétés pour les conditions d'affichage
+    @Published var displayConditions: [DisplayCondition] = []
+    @Published var showingTimeRangeSheet = false
+    @Published var showingDayOfWeekSheet = false
+    @Published var showingLocationSheet = false
+    @Published var editingConditionIndex: Int? = nil
+    
     // Gestion de l'étape active dans le flux d'ajout
     enum AddTransportStep {
         case selectTransportMode
@@ -41,10 +48,16 @@ class AddTransportViewModel: ObservableObject {
         case nameFavorite
     }
     
+    enum AddTransportStepAfterNaming {
+        case configureConditions
+        case saveWithoutConditions
+    }
+    
     @Published var currentStep: AddTransportStep = .selectTransportMode
+    @Published var afterNamingStep: AddTransportStepAfterNaming = .saveWithoutConditions
     
     private var cancellables = Set<AnyCancellable>()
-    private var modelContext: ModelContext?
+    var modelContext: ModelContext?
     
     init(modelContext: ModelContext? = nil) {
         self.modelContext = modelContext

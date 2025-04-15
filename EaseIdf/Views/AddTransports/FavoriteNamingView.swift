@@ -8,7 +8,9 @@
 import SwiftUI
 
 struct FavoriteNamingView: View {
+    @Environment(\.dismiss) private var dismiss
     @ObservedObject var viewModel: AddTransportViewModel
+    @State private var showingConditionOptions = false
     
     var body: some View {
         VStack(spacing: 16) {
@@ -55,14 +57,18 @@ struct FavoriteNamingView: View {
             Spacer()
             
             Button {
-                viewModel.saveFavorite()
+                if viewModel.displayName.isEmpty {
+                    return
+                }
+                // Afficher l'écran d'options pour les conditions
+                showingConditionOptions = true
             } label: {
                 if viewModel.isSaving {
                     ProgressView()
                         .frame(maxWidth: .infinity)
                         .padding()
                 } else {
-                    Text("Ajouter aux favoris")
+                    Text("Continuer")
                         .frame(maxWidth: .infinity)
                         .padding()
                 }
@@ -72,5 +78,29 @@ struct FavoriteNamingView: View {
             .padding(.horizontal)
             .padding(.bottom)
         }
+        .fullScreenCover(isPresented: $showingConditionOptions) {
+            // Si l'utilisateur choisit de configurer des conditions
+            if viewModel.afterNamingStep == .configureConditions {
+                NavigationStack {
+                    ConditionConfigurationView(viewModel: viewModel)
+                        .navigationTitle("Conditions d'affichage")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Annuler") {
+                                    showingConditionOptions = false
+                                }
+                            }
+                        }
+                }
+            } else {
+                // Afficher les options de conditions
+                ConditionOptionsView(viewModel: viewModel)
+            }
+        }
     }
+}
+
+#Preview {
+    FavoriteNamingView(viewModel: AddTransportViewModel())
 }
