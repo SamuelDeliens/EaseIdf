@@ -54,6 +54,25 @@ class PersistenceService {
         }
     }
     
+    func getAllFavorites() -> [TransportFavorite] {
+        guard let container = try? getModelContainer() else {
+            return []
+        }
+        
+        let context = ModelContext(container)
+        
+        do {
+            let descriptor = FetchDescriptor<TransportFavoriteModel>(
+                sortBy: [SortDescriptor(\.priority, order: .reverse)]
+            )
+            let favoriteModels = try context.fetch(descriptor)
+            return favoriteModels.map { $0.toStruct() }
+        } catch {
+            print("Error fetching all favorites: \(error)")
+            return []
+        }
+    }
+    
     /// Convert stored favorites to struct format for use with other services
     func getFavoritesAsStructs(context: ModelContext) -> [TransportFavorite] {
         do {

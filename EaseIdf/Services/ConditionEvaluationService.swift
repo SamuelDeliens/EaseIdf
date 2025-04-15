@@ -15,6 +15,8 @@ class ConditionEvaluationService {
         
     /// Evaluate if all conditions for a favorite are currently met
     func evaluateConditions(for favorite: TransportFavorite) -> Bool {
+        print("condition: ", favorite.displayConditions)
+        
         // If there are no conditions, always show the favorite
         if favorite.displayConditions.isEmpty {
             return true
@@ -38,8 +40,10 @@ class ConditionEvaluationService {
     
     /// Get a list of favorites that should be displayed based on current conditions
     func getCurrentlyActiveTransportFavorites() -> [TransportFavorite] {
-        let allFavorites = StorageService.shared.getUserSettings().favorites
+        // Récupérer les favoris depuis SwiftData
+        let allFavorites = PersistenceService.shared.getAllFavorites()
         
+        // Filtrer les favoris actifs selon les conditions et trier par priorité
         let activeAndSortedFavorites = allFavorites
             .filter { evaluateConditions(for: $0) }
             .sorted { $0.priority > $1.priority } // Sort by priority (higher first)
