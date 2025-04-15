@@ -55,9 +55,7 @@ class IDFMobiliteService {
         guard let url = urlComponents?.url else {
             throw IDFMobiliteError.invalidURL
         }
-        
-        print("Sending request to URL: \(url.absoluteString)")
-        
+                
         var request = URLRequest(url: url)
         request.addValue(apiKey, forHTTPHeaderField: "apikey")
         request.timeoutInterval = 15 // Timeout raisonnable
@@ -68,9 +66,7 @@ class IDFMobiliteService {
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw IDFMobiliteError.invalidResponse
             }
-            
-            print("Response status code: \(httpResponse.statusCode)")
-            
+                        
             switch httpResponse.statusCode {
             case 200...299:
                 // Essayer de parser les données
@@ -148,9 +144,7 @@ class IDFMobiliteService {
             // Décodage de la réponse au format SIRI
             let decoder = JSONDecoder()
             let siriResponse = try decoder.decode(SIRIResponse.self, from: data)
-            
-            print("siriResponse: ", siriResponse)
-            
+                        
             // Conversion en array de Departure
             return siriResponse.toDepartures()
         } catch {

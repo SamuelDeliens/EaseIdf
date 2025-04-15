@@ -118,7 +118,6 @@ class FavoritesViewModel: ObservableObject {
                         activeFavorite.id == favorite.id
                     })
                 }
-                print("refresh Departures for: ", inactiveFavorites)
                 for favorite in inactiveFavorites {
                     try? await fetchDeparturesForFavorite(favorite, into: &newDepartures)
                 }
@@ -142,13 +141,11 @@ class FavoritesViewModel: ObservableObject {
     }
     
     private func fetchDeparturesForFavorite(_ favorite: TransportFavorite, into departuresDict: inout [String: [Departure]]) async throws {
-        print("fetch departures")
         // Fetch departures for this favorite
         let favoriteDepartures = try await IDFMobiliteService.shared.fetchDepartures(
             for: favorite.stopId,
             lineId: favorite.lineId
         )
-        print("res: ", favoriteDepartures)
 
         // Sort by departure time
         let sortedDepartures = favoriteDepartures.sorted {

@@ -121,9 +121,7 @@ extension SIRIResponse {
             print("Aucun StopMonitoringDelivery ou MonitoredStopVisit trouvé")
             return []
         }
-        
-        print("Nombre de visites trouvées: \(visits.count)")
-        
+                
         // Créer un formateur de date ISO 8601 plus flexible
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -166,9 +164,7 @@ extension SIRIResponse {
             let destination = visit.monitoredVehicleJourney.destinationName?.first?.value
                 ?? visit.monitoredVehicleJourney.monitoredCall.destinationDisplay?.first?.value
                 ?? "Destination inconnue"
-            
-            print("Créé un départ pour la ligne \(lineId) vers \(destination) à \(expectedDepartureTime!)")
-            
+                        
             return Departure(
                 stopId: stopId,
                 lineId: lineId,
@@ -179,7 +175,6 @@ extension SIRIResponse {
             )
         }
         
-        print("Nombre de départs convertis: \(departures.count)")
         return departures
     }
     
