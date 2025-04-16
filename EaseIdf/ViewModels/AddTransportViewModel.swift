@@ -210,14 +210,23 @@ class AddTransportViewModel: ObservableObject {
         
         isSaving = true
         
-        // Créer un nouveau favori
+        // Créer un nouveau favori avec les informations complètes
         let favorite = TransportFavorite(
             id: UUID(),
             stopId: stop.id_stop,
             lineId: line.id_line,
             displayName: displayName,
             displayConditions: [],
-            priority: 0
+            priority: 0,
+            lineName: line.name_line,
+            lineShortName: line.shortname_line,
+            lineColor: line.colourweb_hexa ?? "007AFF",
+            lineTextColor: line.textcolourweb_hexa ?? "FFFFFF",
+            lineTransportMode: line.transportmode,
+            stopName: stop.name_stop,
+            stopLatitude: stop.latitude,
+            stopLongitude: stop.longitude,
+            stopType: stop.stop_type
         )
         
         // Enregistrer le favori dans SwiftData
@@ -235,7 +244,8 @@ class AddTransportViewModel: ObservableObject {
                 print("Favori enregistré avec succès dans SwiftData")
             } catch {
                 print("Erreur lors de l'enregistrement du favori dans SwiftData: \(error)")
-                print("Fallback vers UserDefaults déjà effectué")
+                // Fallback vers UserDefaults
+                StorageService.shared.saveFavorite(favorite)
             }
         } else {
             StorageService.shared.saveFavorite(favorite)

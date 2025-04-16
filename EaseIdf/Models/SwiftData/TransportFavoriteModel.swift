@@ -17,6 +17,19 @@ final class TransportFavoriteModel {
     var priority: Int
     var lastUpdated: Date
     
+    // Informations supplémentaires sur la ligne
+    var lineName: String?
+    var lineShortName: String?
+    var lineColor: String?
+    var lineTextColor: String?
+    var lineTransportMode: String?
+    
+    // Informations supplémentaires sur l'arrêt
+    var stopName: String?
+    var stopLatitude: Double?
+    var stopLongitude: Double?
+    var stopType: String?
+    
     @Relationship(deleteRule: .cascade)
     var conditions: [DisplayConditionModel]
     
@@ -26,7 +39,16 @@ final class TransportFavoriteModel {
         lineId: String? = nil,
         displayName: String,
         priority: Int = 0,
-        conditions: [DisplayConditionModel] = []
+        conditions: [DisplayConditionModel] = [],
+        lineName: String? = nil,
+        lineShortName: String? = nil,
+        lineColor: String? = nil,
+        lineTextColor: String? = nil,
+        lineTransportMode: String? = nil,
+        stopName: String? = nil,
+        stopLatitude: Double? = nil,
+        stopLongitude: Double? = nil,
+        stopType: String? = nil
     ) {
         self.id = id
         self.stopId = stopId
@@ -35,6 +57,19 @@ final class TransportFavoriteModel {
         self.priority = priority
         self.lastUpdated = Date()
         self.conditions = conditions
+        
+        // Informations sur la ligne
+        self.lineName = lineName
+        self.lineShortName = lineShortName
+        self.lineColor = lineColor
+        self.lineTextColor = lineTextColor
+        self.lineTransportMode = lineTransportMode
+        
+        // Informations sur l'arrêt
+        self.stopName = stopName
+        self.stopLatitude = stopLatitude
+        self.stopLongitude = stopLongitude
+        self.stopType = stopType
     }
     
     // Convert to struct format for use with other services
@@ -45,7 +80,16 @@ final class TransportFavoriteModel {
             lineId: lineId,
             displayName: displayName,
             displayConditions: conditions.map { $0.toStruct() },
-            priority: priority
+            priority: priority,
+            lineName: lineName,
+            lineShortName: lineShortName,
+            lineColor: lineColor,
+            lineTextColor: lineTextColor,
+            lineTransportMode: lineTransportMode,
+            stopName: stopName,
+            stopLatitude: stopLatitude,
+            stopLongitude: stopLongitude,
+            stopType: stopType
         )
     }
     
@@ -56,7 +100,16 @@ final class TransportFavoriteModel {
             stopId: favorite.stopId,
             lineId: favorite.lineId,
             displayName: favorite.displayName,
-            priority: favorite.priority
+            priority: favorite.priority,
+            lineName: favorite.lineName,
+            lineShortName: favorite.lineShortName,
+            lineColor: favorite.lineColor,
+            lineTextColor: favorite.lineTextColor,
+            lineTransportMode: favorite.lineTransportMode,
+            stopName: favorite.stopName,
+            stopLatitude: favorite.stopLatitude,
+            stopLongitude: favorite.stopLongitude,
+            stopType: favorite.stopType
         )
         
         model.conditions = favorite.displayConditions.map { DisplayConditionModel.fromStruct($0) }

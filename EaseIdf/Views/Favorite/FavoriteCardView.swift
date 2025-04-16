@@ -10,45 +10,45 @@ import SwiftUI
 struct FavoriteCardView: View {
     let favorite: TransportFavorite
     let departures: [Departure]
-    let lineData: ImportedLine?
-    let stopData: ImportedStop?
+    
+    // Variables pour les informations importées depuis les favoris
+    private var lineColor: Color {
+        Color(hex: favorite.lineColor ?? "007AFF")
+    }
+    
+    private var textColor: Color {
+        Color(hex: favorite.lineTextColor ?? "FFFFFF")
+    }
+    
+    private var stopName: String {
+        favorite.stopName ?? favorite.displayName
+    }
+    
+    private var lineShortName: String? {
+        favorite.lineShortName
+    }
     
     @State private var isExpanded = false
-    
-    init(favorite: TransportFavorite, departures: [Departure]) {
-        self.favorite = favorite
-        self.departures = departures
-        
-        // Try to get line data if we have a lineId
-        if let lineId = favorite.lineId {
-            self.lineData = LineDataService.shared.getAllLines().first { $0.id_line == lineId }
-        } else {
-            self.lineData = nil
-        }
-        
-        // Try to get stop data
-        self.stopData = StopDataService.shared.getAllStops().first { $0.id_stop == favorite.stopId }
-    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header with line info
             HStack {
                 // Line badge/logo
-                if let line = lineData {
-                    Text(line.shortname_line)
+                if let shortName = lineShortName {
+                    Text(shortName)
                         .font(.headline)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
-                        .foregroundColor(Color(hex: line.textColor))
-                        .background(Color(hex: line.color))
+                        .foregroundColor(textColor)
+                        .background(lineColor)
                         .cornerRadius(5)
                 }
                 
                 // Stop name and direction
                 VStack(alignment: .leading, spacing: 2) {
                     // Stop name in bold
-                    Text(stopData?.name_stop ?? favorite.displayName)
+                    Text(stopName)
                         .font(.headline)
                         .fontWeight(.bold)
                         .lineLimit(1)
@@ -113,34 +113,24 @@ struct FavoriteCardView: View {
         }
     }
     
-    // Cette méthode est maintenant correctement placée à l'intérieur de la structure FavoriteCardView
-    // Elle a donc accès aux propriétés comme 'departures' et 'favorite'
     private func getDirection() -> String? {
         // First try to get direction from the first departure
         if let firstDeparture = departures.first {
             return firstDeparture.destination
         }
         
-        // Otherwise try to get from line data
-        if let lineId = favorite.lineId, let line = lineData {
-            // Get directions for this line
-            let directions = LineDataService.shared.getDirectionsForLine(lineId: lineId)
-            if directions.count == 1 {
-                return directions.first?.direction
-            } else if directions.count > 1 {
-                // If multiple directions, try to find from display name
-                let displayName = favorite.displayName.lowercased()
-                for direction in directions {
-                    if displayName.contains(direction.direction.lowercased()) {
-                        return direction.direction
-                    }
-                }
-                // Fall back to first direction
-                return directions.first?.direction
+        // Otherwise try to get from line data - utilisons les infos stockées dans le favori
+        if let lineId = favorite.lineId {
+            // Si nous avons des informations dans le favori
+            if let lineName = favorite.lineName {
+                return lineName
             }
             
-            // If no specific direction found, use group name
-            return line.shortname_groupoflines
+            // Si les informations ne sont pas dans le favori, essayer de les obtenir via le service
+            let directions = LineDataService.shared.getDirectionsForLine(lineId: lineId)
+            if !directions.isEmpty {
+                return directions.first?.direction
+            }
         }
         
         return nil

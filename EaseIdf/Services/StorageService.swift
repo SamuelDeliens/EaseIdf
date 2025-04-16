@@ -50,6 +50,10 @@ class StorageService {
         }
         
         saveUserSettings(settings)
+        
+        Task {
+            await WidgetService.shared.refreshWidgetData()
+        }
     }
     
     func removeFavorite(id: UUID) {

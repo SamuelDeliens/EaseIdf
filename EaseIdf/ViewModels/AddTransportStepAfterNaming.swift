@@ -112,14 +112,23 @@ extension AddTransportViewModel {
         
         isSaving = true
         
-        // Créer un nouveau favori avec les conditions configurées
+        // Créer un nouveau favori avec les conditions configurées et les informations complètes
         let favorite = TransportFavorite(
             id: UUID(),
             stopId: stop.id_stop,
             lineId: line.id_line,
             displayName: displayName,
             displayConditions: displayConditions,
-            priority: 0 // La priorité peut être ajustée ultérieurement
+            priority: 0,
+            lineName: line.name_line,
+            lineShortName: line.shortname_line,
+            lineColor: line.colourweb_hexa ?? "007AFF",
+            lineTextColor: line.textcolourweb_hexa ?? "FFFFFF",
+            lineTransportMode: line.transportmode,
+            stopName: stop.name_stop,
+            stopLatitude: stop.latitude,
+            stopLongitude: stop.longitude,
+            stopType: stop.stop_type
         )
         
         // Enregistrer le favori dans SwiftData ou UserDefaults
