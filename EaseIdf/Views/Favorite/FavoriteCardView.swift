@@ -54,7 +54,7 @@ struct FavoriteCardView: View {
                         .lineLimit(1)
                     
                     // Direction in smaller text if available
-                    if let direction = getDirection() {
+                    if let direction = getDirection(departure: departures.first, favorite: favorite) {
                         Text(direction)
                             .font(.subheadline)
                             .foregroundColor(.secondary)
@@ -111,29 +111,6 @@ struct FavoriteCardView: View {
                 }
             }
         }
-    }
-    
-    private func getDirection() -> String? {
-        // First try to get direction from the first departure
-        if let firstDeparture = departures.first {
-            return firstDeparture.destination
-        }
-        
-        // Otherwise try to get from line data - utilisons les infos stockées dans le favori
-        if let lineId = favorite.lineId {
-            // Si nous avons des informations dans le favori
-            if let lineName = favorite.lineName {
-                return lineName
-            }
-            
-            // Si les informations ne sont pas dans le favori, essayer de les obtenir via le service
-            let directions = LineDataService.shared.getDirectionsForLine(lineId: lineId)
-            if !directions.isEmpty {
-                return directions.first?.direction
-            }
-        }
-        
-        return nil
     }
 }
 

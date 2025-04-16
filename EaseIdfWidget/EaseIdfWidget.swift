@@ -25,17 +25,25 @@ struct EaseIdfWidget: Widget {
 
 struct EaseIdfWidgetEntryView: View {
     @Environment(\.widgetFamily) var widgetFamily
+    
     var entry: EaseIdfWidgetProvider.Entry
+    @StateObject private var viewModel: EaseIdfWidgetViewModel
+    
+    init(entry: EaseIdfWidgetProvider.Entry) {
+        self.entry = entry
+        // Initialiser le viewModel en utilisant @StateObject
+        _viewModel = StateObject(wrappedValue: EaseIdfWidgetViewModel(entry: entry))
+    }
     
     var body: some View {
         switch widgetFamily {
         case .systemSmall:
-            SmallWidgetView(entry: entry)
+            SmallWidgetView(viewModel: viewModel, entry: entry)
         case .systemMedium:
-            MediumWidgetView(entry: entry)
+            MediumWidgetView(viewModel: viewModel, entry: entry)
         default:
             // Fallback sur le petit widget pour les autres tailles
-            SmallWidgetView(entry: entry)
+            SmallWidgetView(viewModel: viewModel, entry: entry)
         }
     }
 }

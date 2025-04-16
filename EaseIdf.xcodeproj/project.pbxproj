@@ -71,6 +71,8 @@
 		23F0920E2DAFED0800FB51B1 /* Exceptions for "EaseIdf" folder in "EaseIdfWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				Helpers/Color.swift,
+				Helpers/Direction.swift,
 				Models/Coordinates.swift,
 				Models/Departure.swift,
 				Models/DisplayCondition.swift,
