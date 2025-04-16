@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		23F091F22DAFECB900FB51B1 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 23F091F12DAFECB900FB51B1 /* WidgetKit.framework */; };
+		23F091F42DAFECB900FB51B1 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 23F091F32DAFECB900FB51B1 /* SwiftUI.framework */; };
+		23F092052DAFECBB00FB51B1 /* EaseIdfWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 23F091EF2DAFECB900FB51B1 /* EaseIdfWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		230B5FC32DAD4718000805E6 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -21,17 +27,73 @@
 			remoteGlobalIDString = 230B5FAF2DAD4714000805E6;
 			remoteInfo = EaseIdf;
 		};
+		23F092032DAFECBB00FB51B1 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 230B5FA82DAD4714000805E6 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 23F091EE2DAFECB900FB51B1;
+			remoteInfo = EaseIdfWidgetExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		23F0920A2DAFECBB00FB51B1 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				23F092052DAFECBB00FB51B1 /* EaseIdfWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		230B5FB02DAD4714000805E6 /* EaseIdf.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = EaseIdf.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		230B5FC22DAD4718000805E6 /* EaseIdfTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EaseIdfTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		230B5FCC2DAD4718000805E6 /* EaseIdfUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = EaseIdfUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		23F091EF2DAFECB900FB51B1 /* EaseIdfWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = EaseIdfWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		23F091F12DAFECB900FB51B1 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		23F091F32DAFECB900FB51B1 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		23F0920C2DAFECEA00FB51B1 /* EaseIdfWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = EaseIdfWidgetExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		23F092062DAFECBB00FB51B1 /* Exceptions for "EaseIdfWidget" folder in "EaseIdfWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 23F091EE2DAFECB900FB51B1 /* EaseIdfWidgetExtension */;
+		};
+		23F0920E2DAFED0800FB51B1 /* Exceptions for "EaseIdf" folder in "EaseIdfWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Models/Coordinates.swift,
+				Models/Departure.swift,
+				Models/DisplayCondition.swift,
+				Models/Imported/ImportedLine.swift,
+				Models/Imported/ImportedStop.swift,
+				Models/Operator.swift,
+				Models/StopType.swift,
+				Models/TransportFavorite.swift,
+				Models/TransportLine.swift,
+				Models/TransportMode.swift,
+				Models/TransportStop.swift,
+				Models/UserSettings.swift,
+			);
+			target = 23F091EE2DAFECB900FB51B1 /* EaseIdfWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		230B5FB22DAD4714000805E6 /* EaseIdf */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				23F0920E2DAFED0800FB51B1 /* Exceptions for "EaseIdf" folder in "EaseIdfWidgetExtension" target */,
+			);
 			path = EaseIdf;
 			sourceTree = "<group>";
 		};
@@ -43,6 +105,14 @@
 		230B5FCF2DAD4718000805E6 /* EaseIdfUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = EaseIdfUITests;
+			sourceTree = "<group>";
+		};
+		23F091F52DAFECB900FB51B1 /* EaseIdfWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				23F092062DAFECBB00FB51B1 /* Exceptions for "EaseIdfWidget" folder in "EaseIdfWidgetExtension" target */,
+			);
+			path = EaseIdfWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -69,15 +139,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		23F091EC2DAFECB900FB51B1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				23F091F42DAFECB900FB51B1 /* SwiftUI.framework in Frameworks */,
+				23F091F22DAFECB900FB51B1 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		230B5FA72DAD4714000805E6 = {
 			isa = PBXGroup;
 			children = (
+				23F0920C2DAFECEA00FB51B1 /* EaseIdfWidgetExtension.entitlements */,
 				230B5FB22DAD4714000805E6 /* EaseIdf */,
 				230B5FC52DAD4718000805E6 /* EaseIdfTests */,
 				230B5FCF2DAD4718000805E6 /* EaseIdfUITests */,
+				23F091F52DAFECB900FB51B1 /* EaseIdfWidget */,
+				23F091F02DAFECB900FB51B1 /* Frameworks */,
 				230B5FB12DAD4714000805E6 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -88,8 +170,18 @@
 				230B5FB02DAD4714000805E6 /* EaseIdf.app */,
 				230B5FC22DAD4718000805E6 /* EaseIdfTests.xctest */,
 				230B5FCC2DAD4718000805E6 /* EaseIdfUITests.xctest */,
+				23F091EF2DAFECB900FB51B1 /* EaseIdfWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		23F091F02DAFECB900FB51B1 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				23F091F12DAFECB900FB51B1 /* WidgetKit.framework */,
+				23F091F32DAFECB900FB51B1 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -102,10 +194,12 @@
 				230B5FAC2DAD4714000805E6 /* Sources */,
 				230B5FAD2DAD4714000805E6 /* Frameworks */,
 				230B5FAE2DAD4714000805E6 /* Resources */,
+				23F0920A2DAFECBB00FB51B1 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				23F092042DAFECBB00FB51B1 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				230B5FB22DAD4714000805E6 /* EaseIdf */,
@@ -163,6 +257,28 @@
 			productReference = 230B5FCC2DAD4718000805E6 /* EaseIdfUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		23F091EE2DAFECB900FB51B1 /* EaseIdfWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 23F092072DAFECBB00FB51B1 /* Build configuration list for PBXNativeTarget "EaseIdfWidgetExtension" */;
+			buildPhases = (
+				23F091EB2DAFECB900FB51B1 /* Sources */,
+				23F091EC2DAFECB900FB51B1 /* Frameworks */,
+				23F091ED2DAFECB900FB51B1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				23F091F52DAFECB900FB51B1 /* EaseIdfWidget */,
+			);
+			name = EaseIdfWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = EaseIdfWidgetExtension;
+			productReference = 23F091EF2DAFECB900FB51B1 /* EaseIdfWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -184,6 +300,9 @@
 						CreatedOnToolsVersion = 16.2;
 						TestTargetID = 230B5FAF2DAD4714000805E6;
 					};
+					23F091EE2DAFECB900FB51B1 = {
+						CreatedOnToolsVersion = 16.2;
+					};
 				};
 			};
 			buildConfigurationList = 230B5FAB2DAD4714000805E6 /* Build configuration list for PBXProject "EaseIdf" */;
@@ -203,6 +322,7 @@
 				230B5FAF2DAD4714000805E6 /* EaseIdf */,
 				230B5FC12DAD4718000805E6 /* EaseIdfTests */,
 				230B5FCB2DAD4718000805E6 /* EaseIdfUITests */,
+				23F091EE2DAFECB900FB51B1 /* EaseIdfWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -223,6 +343,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		230B5FCA2DAD4718000805E6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		23F091ED2DAFECB900FB51B1 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -253,6 +380,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		23F091EB2DAFECB900FB51B1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -265,6 +399,11 @@
 			isa = PBXTargetDependency;
 			target = 230B5FAF2DAD4714000805E6 /* EaseIdf */;
 			targetProxy = 230B5FCD2DAD4718000805E6 /* PBXContainerItemProxy */;
+		};
+		23F092042DAFECBB00FB51B1 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 23F091EE2DAFECB900FB51B1 /* EaseIdfWidgetExtension */;
+			targetProxy = 23F092032DAFECBB00FB51B1 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -393,6 +532,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = EaseIdf/EaseIdf.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"EaseIdf/Preview Content\"";
@@ -423,6 +563,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = EaseIdf/EaseIdf.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"EaseIdf/Preview Content\"";
@@ -520,6 +661,62 @@
 			};
 			name = Release;
 		};
+		23F092082DAFECBB00FB51B1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = EaseIdfWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 29Z7LTN8PP;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EaseIdfWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = EaseIdfWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.samueldeliens.EaseIdf.EaseIdfWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		23F092092DAFECBB00FB51B1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = EaseIdfWidgetExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 29Z7LTN8PP;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = EaseIdfWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = EaseIdfWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.samueldeliens.EaseIdf.EaseIdfWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -555,6 +752,15 @@
 			buildConfigurations = (
 				230B5FDD2DAD4718000805E6 /* Debug */,
 				230B5FDE2DAD4718000805E6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		23F092072DAFECBB00FB51B1 /* Build configuration list for PBXNativeTarget "EaseIdfWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				23F092082DAFECBB00FB51B1 /* Debug */,
+				23F092092DAFECBB00FB51B1 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
