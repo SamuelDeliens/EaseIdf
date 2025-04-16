@@ -8,7 +8,8 @@
 import Foundation
 
 struct ImportedStop: Codable, Identifiable {
-    // Propriétés correspondant à la structure du JSON
+    var id: String { id_stop }
+    
     let line: String
     let name_line: String?
     let ns2_stoppointref: String
@@ -16,7 +17,105 @@ struct ImportedStop: Codable, Identifiable {
     let ns2_lines: String?
     let ns2_location: String?
     
-    // Propriétés dérivées pour la compatibilité avec le reste de l'application
+    let calculed_latitude: Double?
+    let calculed_longitude: Double?
+    
+    // Propriété pour suivre si le décodage a réussi
+    let locationParsingSucceeded: Bool
+    
+    // Variable stockée pour rawLocationData, initialisée lors de la construction
+    let rawLocationData: [String: Any]?
+    
+    // Clés de codage pour la localisation
+    enum LocationKeys: String, CodingKey {
+        case longitude = "ns2:Longitude"
+        case latitude = "ns2:Latitude"
+        case srsName = "@srsName"
+    }
+    
+    private enum CodingKeys: String, Swift.CodingKey {
+        case line
+        case name_line
+        case ns2_stoppointref
+        case ns2_stopname
+        case ns2_lines
+        case ns2_location
+    }
+    
+    // MARK: - Initialiseurs
+    
+    // Décodeur personnalisé
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        line = try container.decode(String.self, forKey: .line)
+        name_line = try container.decodeIfPresent(String.self, forKey: .name_line)
+        ns2_stoppointref = try container.decode(String.self, forKey: .ns2_stoppointref)
+        ns2_stopname = try container.decodeIfPresent(String.self, forKey: .ns2_stopname)
+        ns2_lines = try container.decodeIfPresent(String.self, forKey: .ns2_lines)
+        ns2_location = try container.decodeIfPresent(String.self, forKey: .ns2_location)
+        
+        calculed_latitude = nil
+        calculed_longitude = nil
+        
+        // Initialiser rawLocationData
+        if let locationStr = ns2_location {
+            do {
+                if let data = locationStr.data(using: .utf8),
+                   let jsonObj = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                    self.rawLocationData = jsonObj
+                    self.locationParsingSucceeded = true
+                } else {
+                    self.rawLocationData = nil
+                    self.locationParsingSucceeded = false
+                }
+            } catch {
+                print("Erreur lors du parsing de location pour \(ns2_stopname ?? "arrêt inconnu"): \(error)")
+                self.rawLocationData = nil
+                self.locationParsingSucceeded = false
+            }
+        } else {
+            self.rawLocationData = nil
+            self.locationParsingSucceeded = false
+        }
+    }
+    
+    // Constructeur standard
+    init(line: String, name_line: String?, ns2_stoppointref: String, ns2_stopname: String?, ns2_lines: String?, ns2_location: String?, calculed_latitude: Double?, calculed_longitude: Double?) {
+        self.line = line
+        self.name_line = name_line
+        self.ns2_stoppointref = ns2_stoppointref
+        self.ns2_stopname = ns2_stopname
+        self.ns2_lines = ns2_lines
+        self.ns2_location = ns2_location
+        
+        self.calculed_latitude = calculed_latitude
+        self.calculed_longitude = calculed_longitude
+        
+        // Initialiser rawLocationData
+        if let locationStr = ns2_location {
+            do {
+                if let data = locationStr.data(using: .utf8),
+                   let jsonObj = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                    self.rawLocationData = jsonObj
+                    self.locationParsingSucceeded = true
+                } else {
+                    self.rawLocationData = nil
+                    self.locationParsingSucceeded = false
+                }
+            } catch {
+                print("Erreur lors du parsing de location pour \(ns2_stopname ?? "arrêt inconnu"): \(error)")
+                self.rawLocationData = nil
+                self.locationParsingSucceeded = false
+            }
+        } else {
+            self.rawLocationData = nil
+            self.locationParsingSucceeded = false
+        }
+    }
+    
+    // MARK: - Propriétés dérivées
+    
     var id_stop: String {
         // Extrait l'ID de "STIF:StopPoint:Q:15368:"
         let components = ns2_stoppointref.split(separator: ":")
@@ -32,80 +131,69 @@ struct ImportedStop: Codable, Identifiable {
     }
     
     var latitude: Double {
-        guard let locationStr = ns2_location else {
-            print("Aucune donnée de localisation pour l'arrêt \(name_stop)")
-            return 48.8566 // Paris par défaut
+        if let calculated = calculed_latitude {
+            return calculated
         }
         
-        // Analyser les données JSON
-        do {
-            if let data = locationStr.data(using: .utf8),
-               let locationData = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                
-                // Vérifier le système de coordonnées
-                let srsName = locationData["@srsName"] as? String
-                
-                // Extraire les valeurs de longitude et latitude
-                guard let longString = locationData["ns2:Longitude"] as? String,
-                      let latString = locationData["ns2:Latitude"] as? String,
-                      let x = Double(longString),
-                      let y = Double(latString) else {
-                    print("Données de coordonnées invalides pour l'arrêt \(name_stop)")
-                    return 48.8566 // Paris par défaut
-                }
-                
-                // Si c'est Lambert93, convertir en WGS84
-                if srsName == "EPSG:2154" {
-                    if let wgs84Lat = convertLambert93ToWGS84Lat(x: x, y: y) {
-                        return wgs84Lat
-                    }
-                } else {
-                    // Si ce n'est pas Lambert93, supposer que c'est déjà WGS84
-                    return y
-                }
-            }
-        } catch {
-            print("Erreur lors du parsing des données de localisation: \(error)")
+        if let locationData = rawLocationData {
+            return getLatitude(from: locationData)
         }
         
-        return 48.8566 // Paris par défaut
+        return 48.8566 // fallback = Paris
     }
 
     var longitude: Double {
-        guard let locationStr = ns2_location else {
-            print("Aucune donnée de localisation pour l'arrêt \(name_stop)")
-            return 2.3522 // Paris par défaut
+        if let calculated = calculed_longitude {
+            return calculated
         }
         
-        // Analyser les données JSON
-        do {
-            if let data = locationStr.data(using: .utf8),
-               let locationData = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
-                
-                // Vérifier le système de coordonnées
-                let srsName = locationData["@srsName"] as? String
-                
-                // Extraire les valeurs de longitude et latitude
-                guard let longString = locationData["ns2:Longitude"] as? String,
-                      let latString = locationData["ns2:Latitude"] as? String,
-                      let x = Double(longString),
-                      let y = Double(latString) else {
-                    print("Données de coordonnées invalides pour l'arrêt \(name_stop)")
-                    return 2.3522 // Paris par défaut
+        if let locationData = rawLocationData {
+            return getLongitude(from: locationData)
+        }
+        
+        return 2.3522 // Paris par défaut
+    }
+    
+    // MARK: - Fonctions d'extraction de coordonnées
+    
+    private func getLatitude(from locationData: [String: Any]) -> Double {
+        let srsName = locationData["@srsName"] as? String
+        
+        if let latString = locationData["ns2:Latitude"] as? String,
+           let latValue = Double(latString) {
+            
+            // Si c'est Lambert93, convertir en WGS84
+            if srsName == "EPSG:2154" {
+                if let longString = locationData["ns2:Longitude"] as? String,
+                   let longValue = Double(longString),
+                   let wgs84Lat = convertLambert93ToWGS84(x: latValue, y: longValue).lat {
+                    return wgs84Lat
                 }
-                
-                // Si c'est Lambert93, convertir en WGS84
-                if srsName == "EPSG:2154" {
-                    if let wgs84Long = convertLambert93ToWGS84Long(x: x, y: y) {
-                        return wgs84Long
-                    }
-                } else {
-                    // Si ce n'est pas Lambert93, supposer que c'est déjà WGS84
-                    return x
-                }
+            } else {
+                return latValue
             }
-        } catch {
-            print("Erreur lors du parsing des données de localisation: \(error)")
+        }
+
+        return 48.8566 // Paris par défaut
+    }
+    
+    private func getLongitude(from locationData: [String: Any]) -> Double {
+        let srsName = locationData["@srsName"] as? String
+        
+        if let longString = locationData["ns2:Longitude"] as? String,
+           let longValue = Double(longString) {
+            
+            // Si c'est Lambert93, convertir en WGS84
+            if srsName == "EPSG:2154" {
+                if let latString = locationData["ns2:Latitude"] as? String,
+                   let latValue = Double(latString),
+                   let wgs84Long = convertLambert93ToWGS84(x: latValue, y: longValue).lon {
+                    return wgs84Long
+                }
+            } else {
+                // Si ce n'est pas Lambert93, supposer que c'est déjà WGS84
+                return longValue
+            }
         }
         
         return 2.3522 // Paris par défaut
@@ -117,12 +205,14 @@ struct ImportedStop: Codable, Identifiable {
         }
         
         do {
-            let linesData = try JSONSerialization.jsonObject(with: linesStr.data(using: .utf8) ?? Data(), options: []) as? [String: Any]
-            
-            if let lineRefs = linesData?["ns2:LineRef"] as? [String] {
-                return lineRefs
-            } else if let lineRef = linesData?["ns2:LineRef"] as? String {
-                return [lineRef]
+            if let data = linesStr.data(using: .utf8),
+               let linesData = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
+                
+                if let lineRefs = linesData["ns2:LineRef"] as? [String] {
+                    return lineRefs
+                } else if let lineRef = linesData["ns2:LineRef"] as? String {
+                    return [lineRef]
+                }
             }
         } catch {
             print("Erreur lors de l'extraction des lignes: \(error)")
@@ -130,99 +220,33 @@ struct ImportedStop: Codable, Identifiable {
         return [line]
     }
     
-    // Conformité à Identifiable
-    var id: String { id_stop }
+    // MARK: - Méthodes de conversion Lambert93 vers WGS84
     
-    // Méthodes de conversion de coordonnées (à implémenter avec les formules correctes)
-    private func convertLambert93ToWGS84Lat(x: Double, y: Double) -> Double? {
-        // Paramètres de l'ellipsoïde GRS80
-        let a = 6378137.0        // Demi-grand axe (m)
-        let f = 1.0 / 298.257222101 // Aplatissement
-        let e = sqrt(2*f - f*f)  // Première excentricité
-        
-        // Paramètres de la projection Lambert 93
-        let lambda0 = 3.0 * .pi / 180.0  // Méridien central (3° Est)
-        let phi0 = 46.5 * .pi / 180.0    // Latitude d'origine (46.5° Nord)
-        let phi1 = 44.0 * .pi / 180.0    // 1er parallèle automécoïque
-        let phi2 = 49.0 * .pi / 180.0    // 2ème parallèle automécoïque
-        let x0 = 700000.0        // Décalage en X (m)
-        let y0 = 6600000.0       // Décalage en Y (m)
-        
-        // Calcul des constantes de la projection
-        let m1 = cos(phi1) / sqrt(1.0 - e*e * sin(phi1)*sin(phi1))
-        let m2 = cos(phi2) / sqrt(1.0 - e*e * sin(phi2)*sin(phi2))
-        let t0 = tan(.pi/4.0 - phi0/2.0) / pow((1.0 - e*sin(phi0))/(1.0 + e*sin(phi0)), e/2.0)
-        let t1 = tan(.pi/4.0 - phi1/2.0) / pow((1.0 - e*sin(phi1))/(1.0 + e*sin(phi1)), e/2.0)
-        let t2 = tan(.pi/4.0 - phi2/2.0) / pow((1.0 - e*sin(phi2))/(1.0 + e*sin(phi2)), e/2.0)
-        let n = log(m1/m2) / log(t1/t2)
-        let c = m1 * pow(t1, n) / n
-        let r0 = a * c * pow(t0, n)
-        
-        // Coordonnées Lambert93 centrées
-        let X = x - x0
-        let Y = y - y0
-        
-        // Coordonnées polaires
-        let rho = sqrt(X*X + (r0-Y)*(r0-Y)) * (n >= 0 ? 1 : -1)
-        let theta = atan(X / (r0 - Y))
-        
-        // Latitude en coordonnées géographiques
-        let t = pow(rho/(a*c), 1.0/n)
-        var phi = .pi/2.0 - 2.0 * atan(t) // Latitude approchée
-        
-        // Itérations pour améliorer la précision
-        var phiPrev: Double
-        for _ in 0..<10 {
-            phiPrev = phi
-            phi = .pi/2.0 - 2.0 * atan(t * pow((1.0 - e*sin(phi))/(1.0 + e*sin(phi)), e/2.0))
-            if abs(phi - phiPrev) < 1e-11 {
-                break
-            }
-        }
-        
-        // Conversion en degrés
-        return phi * 180.0 / .pi
-    }
+    func convertLambert93ToWGS84(x: Double, y: Double) -> (lat: Double?, lon: Double?) {
+        let GRS80E = 0.081819191042816
+        let n = 0.7256077650532670
+        let C = 11754255.4261
+        let XS = 700000.0
+        let YS = 12655612.0499
+        let lonMeridien = 3 * Double.pi / 180
 
-    private func convertLambert93ToWGS84Long(x: Double, y: Double) -> Double? {
-        // Paramètres de l'ellipsoïde GRS80
-        let a = 6378137.0        // Demi-grand axe (m)
-        let f = 1.0 / 298.257222101 // Aplatissement
-        let e = sqrt(2*f - f*f)  // Première excentricité
-        
-        // Paramètres de la projection Lambert 93
-        let lambda0 = 3.0 * .pi / 180.0  // Méridien central (3° Est)
-        let phi0 = 46.5 * .pi / 180.0    // Latitude d'origine (46.5° Nord)
-        let phi1 = 44.0 * .pi / 180.0    // 1er parallèle automécoïque
-        let phi2 = 49.0 * .pi / 180.0    // 2ème parallèle automécoïque
-        let x0 = 700000.0        // Décalage en X (m)
-        let y0 = 6600000.0       // Décalage en Y (m)
-        
-        // Calcul des constantes de la projection
-        let m1 = cos(phi1) / sqrt(1.0 - e*e * sin(phi1)*sin(phi1))
-        let m2 = cos(phi2) / sqrt(1.0 - e*e * sin(phi2)*sin(phi2))
-        let t0 = tan(.pi/4.0 - phi0/2.0) / pow((1.0 - e*sin(phi0))/(1.0 + e*sin(phi0)), e/2.0)
-        let t1 = tan(.pi/4.0 - phi1/2.0) / pow((1.0 - e*sin(phi1))/(1.0 + e*sin(phi1)), e/2.0)
-        let t2 = tan(.pi/4.0 - phi2/2.0) / pow((1.0 - e*sin(phi2))/(1.0 + e*sin(phi2)), e/2.0)
-        let n = log(m1/m2) / log(t1/t2)
-        let c = m1 * pow(t1, n) / n
-        let r0 = a * c * pow(t0, n)
-        
-        // Coordonnées Lambert93 centrées
-        let X = x - x0
-        let Y = y - y0
-        
-        // Coordonnées polaires
-        let theta = atan(X / (r0 - Y))
-        
-        // Longitude en coordonnées géographiques
-        let lambda = theta/n + lambda0
-        
-        // Conversion en degrés
-        return lambda * 180.0 / .pi
+        let R = sqrt(pow((x - XS), 2) + pow((y - YS), 2))
+        let gamma = atan((x - XS) / (YS - y))
+        let latiso = log(C / R) / n
+        var phi = 2 * atan(exp(latiso)) - Double.pi / 2
+
+        for _ in 0..<6 {
+            phi = 2 * atan(pow((1 + GRS80E * sin(phi)) / (1 - GRS80E * sin(phi)), GRS80E / 2) * exp(latiso)) - Double.pi / 2
+        }
+
+        let latitude = phi * 180 / Double.pi
+        let longitude = (lonMeridien + gamma / n) * 180 / Double.pi
+
+        return (lat: latitude, lon: longitude)
     }
     
-    // Méthodes existantes
+    // MARK: - Méthodes utilitaires
+    
     func toTransportStop() -> TransportStop {
         return TransportStop(
             id: id_stop,
@@ -236,5 +260,31 @@ struct ImportedStop: Codable, Identifiable {
     func getStopType() -> StopType {
         // Par défaut, considérons qu'il s'agit d'un quai (Quay)
         return .quay
+    }
+    
+    // MARK: - Méthodes de débogage
+    
+    func debugDescription() -> String {
+        var debug = "ImportedStop: \(name_stop) (ID: \(id_stop))\n"
+        debug += "  StopPointRef: \(ns2_stoppointref)\n"
+        debug += "  Location parsing succeeded: \(locationParsingSucceeded)\n"
+        
+        if let locationStr = ns2_location {
+            debug += "  Raw Location: \(locationStr)\n"
+        } else {
+            debug += "  Raw Location: nil\n"
+        }
+        
+        debug += "  Parsed coordinates: (\(latitude), \(longitude))\n"
+        
+        if let rawData = rawLocationData {
+            debug += "  Parsed location data: \(rawData)\n"
+        }
+        
+        if let linesRefs = lines_refs {
+            debug += "  Lines: \(linesRefs.joined(separator: ", "))\n"
+        }
+        
+        return debug
     }
 }

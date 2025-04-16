@@ -112,7 +112,9 @@ class StopDataService {
                     ns2_stoppointref: "STIF:StopPoint:Q:\(stopModel.id):",
                     ns2_stopname: stopModel.name,
                     ns2_lines: nil, // Simplification - adapter selon les besoins
-                    ns2_location: nil // Simplification - adapter selon les besoins
+                    ns2_location: nil, // Simplification - adapter selon les besoins
+                    calculed_latitude: stopModel.latitude,
+                    calculed_longitude: stopModel.longitude
                 )
             }
         } catch {
@@ -158,7 +160,9 @@ class StopDataService {
                                 ns2_stoppointref: "STIF:StopPoint:Q:\(stopModel.id):",
                                 ns2_stopname: stopModel.name,
                                 ns2_lines: nil,
-                                ns2_location: nil
+                                ns2_location: nil,
+                                calculed_latitude: stopModel.latitude,
+                                calculed_longitude: stopModel.longitude
                             )
                         }
                 }
@@ -172,7 +176,9 @@ class StopDataService {
                     ns2_stoppointref: "STIF:StopPoint:Q:\(stopModel.id):",
                     ns2_stopname: stopModel.name,
                     ns2_lines: nil,
-                    ns2_location: nil
+                    ns2_location: nil,
+                    calculed_latitude: stopModel.latitude,
+                    calculed_longitude: stopModel.longitude
                 )
             }
         } catch {
@@ -199,7 +205,9 @@ class StopDataService {
                     ns2_stoppointref: "STIF:StopPoint:Q:\(stopModel.id):",
                     ns2_stopname: stopModel.name,
                     ns2_lines: nil,
-                    ns2_location: nil
+                    ns2_location: nil,
+                    calculed_latitude: stopModel.latitude,
+                    calculed_longitude: stopModel.longitude
                 )
             }
         } catch {

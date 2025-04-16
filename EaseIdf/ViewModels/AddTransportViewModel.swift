@@ -158,6 +158,8 @@ class AddTransportViewModel: ObservableObject {
     func selectStop(_ stop: ImportedStop) {
         self.selectedStop = stop
         
+        print(stop)
+        
         if availableDirections.count > 1 {
             // S'il y a plusieurs directions, passer à l'étape de sélection de direction
             self.currentStep = .selectDirection
