@@ -83,6 +83,7 @@
 				Models/TransportMode.swift,
 				Models/TransportStop.swift,
 				Models/UserSettings.swift,
+				Models/Widget/WidgetData.swift,
 			);
 			target = 23F091EE2DAFECB900FB51B1 /* EaseIdfWidgetExtension */;
 		};

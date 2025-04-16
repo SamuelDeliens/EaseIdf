@@ -8,38 +8,6 @@
 import WidgetKit
 import SwiftUI
 
-// Structure pour représenter les données du widget
-struct WidgetData: Codable {
-    let departures: [Departure]
-    let favorites: [TransportFavorite]
-    let lastUpdated: Date
-    
-    static var placeholder: WidgetData {
-        let placeholderDeparture = Departure(
-            stopId: "12345",
-            lineId: "C01742",
-            destination: "Destination",
-            expectedDepartureTime: Date().addingTimeInterval(600),
-            aimedDepartureTime: nil,
-            vehicleJourneyName: nil
-        )
-        
-        let placeholderFavorite = TransportFavorite(
-            id: UUID(),
-            stopId: "12345",
-            lineId: "C01742",
-            displayName: "Bus 42",
-            displayConditions: [],
-            priority: 1
-        )
-        
-        return WidgetData(
-            departures: [placeholderDeparture],
-            favorites: [placeholderFavorite],
-            lastUpdated: Date()
-        )
-    }
-}
 
 // Configuration de l'entrée du widget
 struct WidgetConfigurationEntry: TimelineEntry {
