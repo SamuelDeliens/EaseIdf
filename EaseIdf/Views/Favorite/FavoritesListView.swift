@@ -143,7 +143,7 @@ struct FavoritesListView: View {
         VStack(spacing: 20) {
             Spacer()
             
-            Image(systemName: "train.side.front.car")
+            Image(systemName: "tram.fill")
                 .font(.system(size: 70))
                 .foregroundColor(.secondary)
             

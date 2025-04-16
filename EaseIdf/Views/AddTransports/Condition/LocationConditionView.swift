@@ -227,6 +227,12 @@ struct LocationConditionView: View {
         // Charger tous les arrêts à proximité
         let allStops = StopDataService.shared.getAllStops()
         
+        // Ajouter des logs pour vérifier les coordonnées
+        for stop in allStops.prefix(5) {
+            print("Arrêt: \(stop.name_stop), lat: \(stop.latitude), long: \(stop.longitude)")
+            print("Données brutes de localisation: \(String(describing: stop.ns2_location))")
+        }
+        
         stopAnnotations = allStops.prefix(30).map { stop in
             StopAnnotation(
                 id: stop.id_stop,
@@ -241,13 +247,21 @@ struct LocationConditionView: View {
     }
     
     private func selectStop(_ annotation: StopAnnotation) {
+        // Vérifier que les coordonnées sont valides
+        if annotation.coordinate.latitude == 0 && annotation.coordinate.longitude == 0 {
+            print("Attention : L'arrêt \(annotation.name) a des coordonnées invalides (0,0)")
+            // Peut-être ajouter une alerte pour l'utilisateur
+            return
+        }
+        
         // Mettre à jour les annotations
         for i in 0..<stopAnnotations.count {
             stopAnnotations[i].isSelected = stopAnnotations[i].id == annotation.id
         }
         
-        // Mettre à jour la position sélectionnée
+        // Mettre à jour la position sélectionnée avec débogage
         selectedLocation = annotation.coordinate
+        print("Sélection d'un arrêt avec coordonnées: lat=\(annotation.coordinate.latitude), long=\(annotation.coordinate.longitude)")
         locationName = annotation.name
         isUsingCurrentLocation = false
         
@@ -274,15 +288,27 @@ struct LocationConditionView: View {
         
         let locationCoordinate: CLLocationCoordinate2D
         
-        if isUsingCurrentLocation, let currentLocation = LocationService.shared.currentLocation?.coordinate {
-            // Utiliser la position actuelle
-            locationCoordinate = currentLocation
+        if isUsingCurrentLocation {
+            // S'assurer que nous avons une position actuelle
+            if let currentLocation = LocationService.shared.currentLocation?.coordinate {
+                locationCoordinate = currentLocation
+            } else {
+                // Si la position actuelle n'est pas disponible, afficher une alerte
+                // et ne pas continuer
+                print("Position actuelle non disponible")
+                return
+            }
         } else if let location = selectedLocation {
-            // Utiliser la position sélectionnée
             locationCoordinate = location
         } else {
-            // Fallback sur Paris
-            locationCoordinate = CLLocationCoordinate2D(latitude: 48.8566, longitude: 2.3522)
+            // Ne pas continuer si aucune coordonnée n'est disponible
+            return
+        }
+        
+        // Assurez-vous que les coordonnées sont valides (pas à 0,0)
+        if locationCoordinate.latitude == 0.0 && locationCoordinate.longitude == 0.0 {
+            print("Coordonnées invalides (0,0)")
+            return
         }
         
         let coordinates = Coordinates(
@@ -295,11 +321,12 @@ struct LocationConditionView: View {
             radius: radius
         )
         
+        // Afficher les coordonnées enregistrées pour débogage
+        print("Enregistrement de la condition avec coordonnées: \(coordinates.latitude), \(coordinates.longitude)")
+        
         if let index = editingIndex {
-            // Mettre à jour une condition existante
             viewModel.updateLocationCondition(at: index, location: locationCondition)
         } else {
-            // Créer une nouvelle condition
             let newCondition = DisplayCondition(
                 type: .location,
                 isActive: true,
@@ -308,7 +335,6 @@ struct LocationConditionView: View {
             viewModel.addCondition(newCondition)
         }
         
-        // Fermer le sheet
         viewModel.closeConditionSheet()
     }
 }

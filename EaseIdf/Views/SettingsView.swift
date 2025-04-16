@@ -46,6 +46,18 @@ struct SettingsView: View {
                     }
                 }
                 
+                Section(header: Text("Diagnostic")) {
+                    Button("Diagnostiquer la localisation") {
+                        let debugInfo = LocationDebugService.shared.debugLocationStatus()
+                        print(debugInfo)
+                        // Vous pourriez afficher une alerte avec ces informations
+                    }
+                    
+                    Button("Corriger les conditions de localisation") {
+                        LocationDebugService.shared.fixLocationConditions()
+                    }
+                }
+                
                 Section(header: Text("Préférences d'affichage")) {
                     Toggle("Afficher uniquement les prochains départs", isOn: $viewModel.showOnlyUpcomingDepartures)
                     
