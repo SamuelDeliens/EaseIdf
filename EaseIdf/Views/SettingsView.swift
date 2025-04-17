@@ -68,7 +68,7 @@ struct SettingsView: View {
                     VStack {
                         Text("Intervalle d'actualisation: \(viewModel.formatTimeInterval(viewModel.refreshInterval))")
                         
-                        Slider(value: $viewModel.refreshInterval, in: 30...300, step: 30) {
+                        Slider(value: $viewModel.refreshInterval, in: 30...600, step: 30) {
                             Text("Intervalle d'actualisation")
                         }
                     }

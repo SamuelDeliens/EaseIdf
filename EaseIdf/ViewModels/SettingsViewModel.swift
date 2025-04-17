@@ -11,7 +11,7 @@ import Combine
 
 class SettingsViewModel: ObservableObject {
     @Published var apiKey: String = ""
-    @Published var refreshInterval: Double = 120.0
+    @Published var refreshInterval: Double = 300.0
     @Published var visualRefreshInterval: Double = 60.0
     @Published var showOnlyUpcomingDepartures: Bool = true
     @Published var numberOfDeparturesToShow: Int = 3
