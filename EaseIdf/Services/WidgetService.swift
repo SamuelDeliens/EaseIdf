@@ -120,6 +120,11 @@ class WidgetService {
         }
     }
     
+    func stopBackgroundUpdate() {
+        dataRefreshTimer?.invalidate()
+        visualRefreshTimer?.invalidate()
+    }
+    
     /// Force refresh of widget data - useful when user performs manual refresh
     func forceRefreshWidgetData() async {
         await refreshWidgetData()

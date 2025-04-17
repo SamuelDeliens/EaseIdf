@@ -30,7 +30,7 @@ class StorageService {
         // Return default settings if none are saved
         return UserSettings(
             favorites: [],
-            refreshInterval: 60,
+            refreshInterval: 300,
             showOnlyUpcomingDepartures: true,
             numberOfDeparturesToShow: 3
         )

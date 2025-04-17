@@ -10,6 +10,8 @@ import SwiftData
 import Combine
 
 class FavoritesViewModel: ObservableObject {
+    static var shared: FavoritesViewModel = FavoritesViewModel()
+    
     @Published var favorites: [TransportFavorite] = []
     @Published var activeFavorites: [TransportFavorite] = []
     @Published var departures: [String: [Departure]] = [:]
@@ -49,10 +51,6 @@ class FavoritesViewModel: ObservableObject {
                 
                 // Load departures for active favorites
                 refreshDepartures()
-                
-                // Start refresh timers
-                setupRefreshTimers()
-                
             } catch {
                 print("Error fetching favorites from SwiftData: \(error)")
                 
@@ -60,14 +58,20 @@ class FavoritesViewModel: ObservableObject {
                 favorites = StorageService.shared.getUserSettings().favorites
                 updateActiveFavorites()
                 refreshDepartures()
-                setupRefreshTimers()
             }
         } else {
             // Fallback to UserDefaults via StorageService
             favorites = StorageService.shared.getUserSettings().favorites
             updateActiveFavorites()
             refreshDepartures()
+        }
+        
+        let settings = StorageService.shared.getUserSettings()
+        if !settings.isRefreshPaused {
             setupRefreshTimers()
+        } else {
+            stopRefreshTimers()
+            print("Chargement des favoris terminé, mais les rafraîchissements sont en pause")
         }
     }
     
@@ -206,7 +210,8 @@ class FavoritesViewModel: ObservableObject {
     
     // MARK: - Timer Management
     
-    private func setupRefreshTimers() {
+    func setupRefreshTimers() {
+        print("setupRefreshTimers")
         // Cancel existing timers
         stopRefreshTimers()
         
@@ -217,11 +222,13 @@ class FavoritesViewModel: ObservableObject {
         
         // Create new data refresh timer (pour les requêtes serveur)
         dataRefreshTimer = Timer.scheduledTimer(withTimeInterval: dataInterval, repeats: true) { [weak self] _ in
+            print("refresh Departure")
             self?.refreshDepartures()
         }
         
         // Create new visual refresh timer (pour les mises à jour visuelles)
         visualRefreshTimer = Timer.scheduledTimer(withTimeInterval: visualInterval, repeats: true) { [weak self] _ in
+            print("refresh Visual Departures")
             self?.updateVisualDepartures()
         }
     }

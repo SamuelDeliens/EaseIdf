@@ -11,13 +11,14 @@ import Combine
 
 class SettingsViewModel: ObservableObject {
     @Published var apiKey: String = ""
-    @Published var refreshInterval: Double = 120.0
+    @Published var refreshInterval: Double = 300.0
     @Published var visualRefreshInterval: Double = 60.0
     @Published var showOnlyUpcomingDepartures: Bool = true
-    @Published var numberOfDeparturesToShow: Int = 3
+    @Published var numberOfDeparturesToShow: Int = 2
     @Published var showSavedAlert: Bool = false
     @Published var isConnectionValid: Bool = false
     @Published var isTestingConnection: Bool = false
+    @Published var isRefreshPaused: Bool = false
     
     private var cancellables = Set<AnyCancellable>()
     private var modelContext: ModelContext?
@@ -47,6 +48,7 @@ class SettingsViewModel: ObservableObject {
                     refreshInterval = settings.refreshInterval
                     showOnlyUpcomingDepartures = settings.showOnlyUpcomingDepartures
                     numberOfDeparturesToShow = settings.numberOfDeparturesToShow
+                    isRefreshPaused = settings.isRefreshPaused
                     return
                 }
             } catch {
@@ -59,6 +61,7 @@ class SettingsViewModel: ObservableObject {
         refreshInterval = defaultSettings.refreshInterval
         showOnlyUpcomingDepartures = defaultSettings.showOnlyUpcomingDepartures
         numberOfDeparturesToShow = defaultSettings.numberOfDeparturesToShow
+        isRefreshPaused = defaultSettings.isRefreshPaused
     }
     
     func saveSettings() {
@@ -84,6 +87,7 @@ class SettingsViewModel: ObservableObject {
                 settings.refreshInterval = refreshInterval
                 settings.showOnlyUpcomingDepartures = showOnlyUpcomingDepartures
                 settings.numberOfDeparturesToShow = numberOfDeparturesToShow
+                settings.isRefreshPaused = isRefreshPaused
                 
                 try modelContext.save()
             } catch {
@@ -97,18 +101,30 @@ class SettingsViewModel: ObservableObject {
             apiKey: nil, // Don't store API key in UserDefaults anymore
             refreshInterval: refreshInterval,
             showOnlyUpcomingDepartures: showOnlyUpcomingDepartures,
-            numberOfDeparturesToShow: numberOfDeparturesToShow
+            numberOfDeparturesToShow: numberOfDeparturesToShow,
+            isRefreshPaused: isRefreshPaused
         )
         StorageService.shared.saveUserSettings(userDefaults)
         
         // Update widget refresh interval
-        WidgetService.shared.scheduleBackgroundUpdates(interval: refreshInterval)
+        if (isRefreshPaused) {
+            FavoritesViewModel.shared.stopRefreshTimers()
+            WidgetService.shared.stopBackgroundUpdate()
+        } else {
+            FavoritesViewModel.shared.setupRefreshTimers()
+            WidgetService.shared.scheduleBackgroundUpdates(interval: refreshInterval)
+        }
         
         // Notify any active view models about the setting changes
         NotificationCenter.default.post(name: Notification.Name("SettingsChanged"), object: nil)
         
         // Show confirmation
         showSavedAlert = true
+    }
+    
+    func toggleRefreshPause() {
+        isRefreshPaused.toggle()
+        print("isRefreshPaused", isRefreshPaused)
     }
     
     func testApiKey() async {

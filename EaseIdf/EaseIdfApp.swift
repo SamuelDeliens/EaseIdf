@@ -134,7 +134,12 @@ struct EaseIdfApp: App {
             
             // Widget refresh
             let settings = StorageService.shared.getUserSettings()
-            WidgetService.shared.scheduleBackgroundUpdates(interval: settings.refreshInterval)
+            
+            if settings.isRefreshPaused {
+                WidgetService.shared.stopBackgroundUpdate()
+            } else {
+                WidgetService.shared.scheduleBackgroundUpdates(interval: settings.refreshInterval)
+            }
             await WidgetService.shared.refreshWidgetData()
             updateProgress()
         }

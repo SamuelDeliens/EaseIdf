@@ -17,6 +17,7 @@ final class UserSettingsModel {
     var numberOfDeparturesToShow: Int
     var lastAppLaunch: Date
     var lastFullDataRefresh: Date?
+    var isRefreshPaused: Bool
     
     init(
         refreshInterval: Double = 300.0,
@@ -24,7 +25,8 @@ final class UserSettingsModel {
         showOnlyUpcomingDepartures: Bool = true,
         numberOfDeparturesToShow: Int = 3,
         lastAppLaunch: Date = Date(),
-        lastFullDataRefresh: Date? = nil
+        lastFullDataRefresh: Date? = nil,
+        isRefreshPaused: Bool = false
     ) {
         self.refreshInterval = refreshInterval
         self.visualRefreshInterval = visualRefreshInterval
@@ -32,6 +34,7 @@ final class UserSettingsModel {
         self.numberOfDeparturesToShow = numberOfDeparturesToShow
         self.lastAppLaunch = lastAppLaunch
         self.lastFullDataRefresh = lastFullDataRefresh
+        self.isRefreshPaused = isRefreshPaused
     }
     
     // Convert to struct format
@@ -44,6 +47,7 @@ final class UserSettingsModel {
             showOnlyUpcomingDepartures: showOnlyUpcomingDepartures,
             numberOfDeparturesToShow: numberOfDeparturesToShow,
             lastAppLaunch: lastAppLaunch,
+            isRefreshPaused: isRefreshPaused,
             lastFullDataRefresh: lastFullDataRefresh
         )
     }
@@ -56,7 +60,8 @@ final class UserSettingsModel {
             showOnlyUpcomingDepartures: settings.showOnlyUpcomingDepartures,
             numberOfDeparturesToShow: settings.numberOfDeparturesToShow,
             lastAppLaunch: settings.lastAppLaunch,
-            lastFullDataRefresh: settings.lastFullDataRefresh
+            lastFullDataRefresh: settings.lastFullDataRefresh,
+            isRefreshPaused: settings.isRefreshPaused
         )
     }
 }

@@ -15,6 +15,7 @@ struct UserSettings: Codable {
     var showOnlyUpcomingDepartures: Bool = true
     var numberOfDeparturesToShow: Int = 3
     var lastAppLaunch: Date = Date()
+    var isRefreshPaused: Bool = false
     
     // Nouvelle propriété pour suivre la dernière mise à jour de données complète
     var lastFullDataRefresh: Date?

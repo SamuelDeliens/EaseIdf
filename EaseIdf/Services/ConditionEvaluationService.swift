@@ -14,9 +14,7 @@ class ConditionEvaluationService {
     private init() {}
         
     /// Evaluate if all conditions for a favorite are currently met
-    func evaluateConditions(for favorite: TransportFavorite) -> Bool {
-        print("condition: ", favorite.displayConditions)
-        
+    func evaluateConditions(for favorite: TransportFavorite) -> Bool {        
         // If there are no conditions, always show the favorite
         if favorite.displayConditions.isEmpty {
             return true
