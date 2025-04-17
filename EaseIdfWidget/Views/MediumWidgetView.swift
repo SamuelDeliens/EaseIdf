@@ -41,7 +41,6 @@ struct MediumWidgetContentView: View {
                     .foregroundColor(.secondary)
             }
             .padding(.horizontal, 16)
-            .padding(.top, 12)
             .padding(.bottom, 4)
             
             // Divider line
@@ -50,7 +49,7 @@ struct MediumWidgetContentView: View {
                 .padding(.bottom, 8)
             
             // Content - show up to 3 lines/stops
-            VStack(spacing: 12) {
+            VStack(spacing: 8) {
                 // Limiter à 3 groupes maximum
                 ForEach(0..<min(3, viewModel.groupsDepartures.count), id: \.self) { groupIndex in
                     let group = viewModel.groupsDepartures[groupIndex]
@@ -60,15 +59,10 @@ struct MediumWidgetContentView: View {
                         favorite: group.transportFavorite,
                         departures: group.departures
                     )
-                    
-                    if groupIndex < min(2, group.departures.count - 1) {
-                        Divider()
-                            .padding(.horizontal, 16)
-                    }
                 }
             }
-            .padding(.bottom, 8)
         }
+        .padding(4)
     }
 }
 
@@ -117,6 +111,7 @@ struct MediumDeparturesLineView: View {
                         .padding(.horizontal, 6)
                         .foregroundColor(.green)
                         .cornerRadius(4)
+                        .lineLimit(1)
                 }
                 if (departures.count >= 2) {
                     Text(departures[1].waitingTime)
@@ -126,6 +121,7 @@ struct MediumDeparturesLineView: View {
                         .padding(.horizontal, 6)
                         .foregroundColor(.green)
                         .cornerRadius(4)
+                        .lineLimit(1)
                 }
             }
         }

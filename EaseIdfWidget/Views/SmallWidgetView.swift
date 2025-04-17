@@ -28,7 +28,7 @@ struct SmallWidgetContentView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            VStack(spacing: 12) {
+            VStack(spacing: 8) {
                 // Limiter à 2 groupes maximum
                 ForEach(0..<min(2, viewModel.groupsDepartures.count), id: \.self) { groupIndex in
                     let group = viewModel.groupsDepartures[groupIndex]
@@ -39,7 +39,6 @@ struct SmallWidgetContentView: View {
                     )
                 }
             }
-            .padding(.bottom, 8)
                 
             Spacer()
             
@@ -53,9 +52,8 @@ struct SmallWidgetContentView: View {
                     .font(.system(size: 9))
                     .foregroundColor(.secondary)
             }
-            .padding(.horizontal, 8)
-            .padding(.bottom, 2)
         }
+        .padding(4)
     }
 }
 
