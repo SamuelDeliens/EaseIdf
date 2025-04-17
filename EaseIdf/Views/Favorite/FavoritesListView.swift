@@ -2,8 +2,9 @@
 //  FavoritesListView.swift
 //  EaseIdf
 //
-//  Created by Samuel DELIENS on 14/04/2025.
+//  Modified to support enhanced swipe actions
 //
+
 
 import SwiftUI
 import SwiftData
@@ -91,13 +92,21 @@ struct FavoritesListView: View {
                             let departures = viewModel.departures[favorite.id.uuidString] ?? []
                             let isActive = viewModel.activeFavorites.contains(where: { $0.id == favorite.id })
                             
-                            // Utilisation de SwipeActionView pour le swipe-to-delete
-                            SwipeActionView(favorite: favorite, action: {
-                                // Action à exécuter lors de la suppression
-                                withAnimation {
-                                    viewModel.removeFavorite(with: favorite.id)
+                            // Utilisation de SwipeActionsView pour le swipe à deux niveaux
+                            SwipeActionsView(
+                                favorite: favorite,
+                                deleteAction: {
+                                    // Action de suppression
+                                    withAnimation {
+                                        viewModel.removeFavorite(with: favorite.id)
+                                    }
+                                },
+                                editAction: {
+                                    // Action d'édition (à implémenter plus tard)
+                                    print("Édition du favori: \(favorite.displayName)")
+                                    // Cette fonction sera développée ultérieurement
                                 }
-                            }) {
+                            ) {
                                 ZStack(alignment: .topTrailing) {
                                     FavoriteCardView(favorite: favorite, departures: departures)
                                     
