@@ -27,8 +27,8 @@ class WidgetService {
         )
         
         if let encoded = try? JSONEncoder().encode(userData) {
-            if let sharedDefaults = UserDefaults(suiteName: "group.com.samueldeliens.EaseIdf") {
-                sharedDefaults.set(encoded, forKey: "widgetData")
+            if let sharedDefaults = UserDefaults(suiteName: KeychainConstants.appGroup) {
+                sharedDefaults.set(encoded, forKey: KeychainConstants.SharedUserDefaults.widgetData)
                 
                 // Refresh all widgets
                 refreshWidgets()
@@ -71,8 +71,8 @@ class WidgetService {
     
     /// Update widget visually without fetching new data
     func updateWidgetVisually() async {
-        if let sharedDefaults = UserDefaults(suiteName: "group.com.samueldeliens.EaseIdf"),
-           let data = sharedDefaults.data(forKey: "widgetData"),
+        if let sharedDefaults = UserDefaults(suiteName: KeychainConstants.appGroup),
+           let data = sharedDefaults.data(forKey: KeychainConstants.SharedUserDefaults.widgetData),
            let widgetData = try? JSONDecoder().decode(WidgetData.self, from: data) {
             
             let activeFavorites = ConditionEvaluationService.shared.getCurrentlyActiveTransportFavorites()
@@ -93,8 +93,8 @@ class WidgetService {
         visualRefreshTimer?.invalidate()
         
         // Configuration de l'intervalle de rafraîchissement des données
-        if let sharedDefaults = UserDefaults(suiteName: "group.com.samueldeliens.EaseIdf") {
-            sharedDefaults.set(interval, forKey: "widgetRefreshInterval")
+        if let sharedDefaults = UserDefaults(suiteName: KeychainConstants.appGroup) {
+            sharedDefaults.set(interval, forKey: KeychainConstants.SharedUserDefaults.widgetRefreshInterval)
         }
         
         // Créer un nouveau timer pour les mises à jour de données (intervalles longs)

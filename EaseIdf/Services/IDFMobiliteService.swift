@@ -30,7 +30,7 @@ class IDFMobiliteService {
     private let referentialLinesURL = "/ilico/getData"
     
     private var apiKey: String? {
-        return UserDefaults.standard.string(forKey: "IDFMobilite_ApiKey")
+        return KeychainService.shared.getAPIKey()
     }
     
     // MARK: - Public methods

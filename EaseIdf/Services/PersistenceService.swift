@@ -105,8 +105,8 @@ class PersistenceService {
                 
                 // Remove old conditions and add new ones
                 existingFavorite.conditions.removeAll()
-                existingFavorite.conditions = favorite.displayConditions.map { 
-                    DisplayConditionModel.fromStruct($0) 
+                existingFavorite.conditions = favorite.displayConditions.map {
+                    DisplayConditionModel.fromStruct($0)
                 }
             } else {
                 // Create new favorite
@@ -160,8 +160,7 @@ class PersistenceService {
             let existingSettings = try context.fetch(descriptor)
             
             if let currentSettings = existingSettings.first {
-                // Update existing settings
-                currentSettings.apiKey = settings.apiKey
+                // Update existing settings - API key is now stored in Keychain
                 currentSettings.refreshInterval = settings.refreshInterval
                 currentSettings.showOnlyUpcomingDepartures = settings.showOnlyUpcomingDepartures
                 currentSettings.numberOfDeparturesToShow = settings.numberOfDeparturesToShow

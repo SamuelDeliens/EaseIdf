@@ -100,7 +100,6 @@ class FavoritesViewModel: ObservableObject {
     
     /// Rafraîchissement complet des données (avec requête serveur)
     func refreshDepartures() {
-        print("start refresh")
         guard !favorites.isEmpty else { return }
         
         isLoading = true
@@ -147,7 +146,6 @@ class FavoritesViewModel: ObservableObject {
     
     /// Rafraîchissement visuel uniquement (sans requête serveur)
     func updateVisualDepartures() {
-        print("visual update")
         // Mettre à jour les temps d'attente pour tous les départs stockés
         var updatedDepartures: [String: [Departure]] = [:]
         
@@ -219,13 +217,11 @@ class FavoritesViewModel: ObservableObject {
         
         // Create new data refresh timer (pour les requêtes serveur)
         dataRefreshTimer = Timer.scheduledTimer(withTimeInterval: dataInterval, repeats: true) { [weak self] _ in
-            print("Timer: start refresh")
             self?.refreshDepartures()
         }
         
         // Create new visual refresh timer (pour les mises à jour visuelles)
         visualRefreshTimer = Timer.scheduledTimer(withTimeInterval: visualInterval, repeats: true) { [weak self] _ in
-            print("Timer: start visual update")
             self?.updateVisualDepartures()
         }
     }

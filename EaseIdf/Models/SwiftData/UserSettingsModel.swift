@@ -10,7 +10,7 @@ import SwiftData
 
 @Model
 final class UserSettingsModel {
-    var apiKey: String?
+    // ApiKey is no longer stored in SwiftData
     var refreshInterval: Double
     var visualRefreshInterval: Double
     var showOnlyUpcomingDepartures: Bool
@@ -19,7 +19,6 @@ final class UserSettingsModel {
     var lastFullDataRefresh: Date?
     
     init(
-        apiKey: String? = nil,
         refreshInterval: Double = 300.0,
         visualRefreshInterval: Double = 60.0,
         showOnlyUpcomingDepartures: Bool = true,
@@ -27,7 +26,6 @@ final class UserSettingsModel {
         lastAppLaunch: Date = Date(),
         lastFullDataRefresh: Date? = nil
     ) {
-        self.apiKey = apiKey
         self.refreshInterval = refreshInterval
         self.visualRefreshInterval = visualRefreshInterval
         self.showOnlyUpcomingDepartures = showOnlyUpcomingDepartures
@@ -40,7 +38,7 @@ final class UserSettingsModel {
     func toStruct() -> UserSettings {
         return UserSettings(
             favorites: [], // Favorites are handled separately via PersistenceService
-            apiKey: apiKey,
+            apiKey: KeychainService.shared.getAPIKey(), // Get API key from Keychain instead
             refreshInterval: refreshInterval,
             visualRefreshInterval: visualRefreshInterval,
             showOnlyUpcomingDepartures: showOnlyUpcomingDepartures,
@@ -53,7 +51,6 @@ final class UserSettingsModel {
     // Create from struct
     static func fromStruct(_ settings: UserSettings) -> UserSettingsModel {
         return UserSettingsModel(
-            apiKey: settings.apiKey,
             refreshInterval: settings.refreshInterval,
             visualRefreshInterval: settings.visualRefreshInterval,
             showOnlyUpcomingDepartures: settings.showOnlyUpcomingDepartures,

@@ -11,7 +11,7 @@ import Combine
 
 class SettingsViewModel: ObservableObject {
     @Published var apiKey: String = ""
-    @Published var refreshInterval: Double = 300.0
+    @Published var refreshInterval: Double = 120.0
     @Published var visualRefreshInterval: Double = 60.0
     @Published var showOnlyUpcomingDepartures: Bool = true
     @Published var numberOfDeparturesToShow: Int = 3
@@ -28,17 +28,22 @@ class SettingsViewModel: ObservableObject {
     
     func setModelContext(_ context: ModelContext?) {
         self.modelContext = context
+        loadSettings()
     }
     
     func loadSettings() {
+        // Load API key from Keychain
+        if let storedApiKey = KeychainService.shared.getAPIKey() {
+            apiKey = storedApiKey
+        }
+        
         if let modelContext = modelContext {
-            // Try to load from SwiftData first
+            // Try to load other settings from SwiftData
             do {
                 let descriptor = FetchDescriptor<UserSettingsModel>()
                 let userSettings = try modelContext.fetch(descriptor)
                 
                 if let settings = userSettings.first {
-                    apiKey = settings.apiKey ?? ""
                     refreshInterval = settings.refreshInterval
                     showOnlyUpcomingDepartures = settings.showOnlyUpcomingDepartures
                     numberOfDeparturesToShow = settings.numberOfDeparturesToShow
@@ -49,16 +54,18 @@ class SettingsViewModel: ObservableObject {
             }
         }
         
-        // Fall back to UserDefaults via StorageService
+        // Fall back to UserDefaults via StorageService for other settings
         let defaultSettings = StorageService.shared.getUserSettings()
-        apiKey = defaultSettings.apiKey ?? ""
         refreshInterval = defaultSettings.refreshInterval
         showOnlyUpcomingDepartures = defaultSettings.showOnlyUpcomingDepartures
         numberOfDeparturesToShow = defaultSettings.numberOfDeparturesToShow
     }
     
     func saveSettings() {
-        // Save to SwiftData if available
+        // Save API key to Keychain
+        _ = KeychainService.shared.saveAPIKey(apiKey)
+        
+        // Save other settings to SwiftData if available
         if let modelContext = modelContext {
             do {
                 let descriptor = FetchDescriptor<UserSettingsModel>()
@@ -73,7 +80,7 @@ class SettingsViewModel: ObservableObject {
                     modelContext.insert(settings)
                 }
                 
-                settings.apiKey = apiKey
+                // No longer storing API key in SwiftData
                 settings.refreshInterval = refreshInterval
                 settings.showOnlyUpcomingDepartures = showOnlyUpcomingDepartures
                 settings.numberOfDeparturesToShow = numberOfDeparturesToShow
@@ -87,15 +94,12 @@ class SettingsViewModel: ObservableObject {
         // Also save to UserDefaults via StorageService for backward compatibility
         let userDefaults = UserSettings(
             favorites: StorageService.shared.getUserSettings().favorites,
-            apiKey: apiKey,
+            apiKey: nil, // Don't store API key in UserDefaults anymore
             refreshInterval: refreshInterval,
             showOnlyUpcomingDepartures: showOnlyUpcomingDepartures,
             numberOfDeparturesToShow: numberOfDeparturesToShow
         )
         StorageService.shared.saveUserSettings(userDefaults)
-        
-        // Save API key to authentication service
-        UserDefaults.standard.set(apiKey, forKey: "IDFMobilite_ApiKey")
         
         // Update widget refresh interval
         WidgetService.shared.scheduleBackgroundUpdates(interval: refreshInterval)

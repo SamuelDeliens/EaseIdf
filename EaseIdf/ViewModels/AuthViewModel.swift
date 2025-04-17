@@ -23,6 +23,17 @@ class AuthViewModel: ObservableObject {
         if let key = AuthenticationService.shared.getApiKey() {
             apiKey = key
         }
+        
+        // Subscribe to auth status changes
+        AuthenticationService.shared.$authStatus
+            .sink { [weak self] status in
+                DispatchQueue.main.async {
+                    self?.isAuthenticated = status == .authenticated
+                    self?.isValidating = status == .validating
+                    self?.showError = status == .invalid
+                }
+            }
+            .store(in: &cancellables)
     }
     
     func validateApiKey() async {
@@ -43,5 +54,6 @@ class AuthViewModel: ObservableObject {
     func signOut() {
         AuthenticationService.shared.signOut()
         isAuthenticated = false
+        apiKey = ""
     }
 }

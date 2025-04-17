@@ -19,12 +19,24 @@ class AuthenticationService {
     static let shared = AuthenticationService()
     
     private init() {
-        // Check if we have a stored API key
-        if let savedApiKey = UserDefaults.standard.string(forKey: "IDFMobilite_ApiKey") {
+        // Check if we have a stored API key in Keychain
+        if let savedApiKey = KeychainService.shared.getAPIKey() {
             apiKey = savedApiKey
             authStatus = .authenticated
         } else {
-            authStatus = .unauthenticated
+            // Try legacy UserDefaults as fallback for migration
+            if let legacyApiKey = UserDefaults.standard.string(forKey: "IDFMobilite_ApiKey") {
+                apiKey = legacyApiKey
+                authStatus = .authenticated
+                
+                // Migrate to Keychain
+                _ = KeychainService.shared.saveAPIKey(legacyApiKey)
+                
+                // Remove from UserDefaults after migration
+                UserDefaults.standard.removeObject(forKey: "IDFMobilite_ApiKey")
+            } else {
+                authStatus = .unauthenticated
+            }
         }
     }
     
@@ -42,7 +54,8 @@ class AuthenticationService {
         let isValid = await validateApiKey(key)
         
         if isValid {
-            UserDefaults.standard.set(key, forKey: "IDFMobilite_ApiKey")
+            // Save to Keychain
+            _ = KeychainService.shared.saveAPIKey(key)
             self.authStatus = .authenticated
         } else {
             self.authStatus = .invalid
@@ -59,7 +72,7 @@ class AuthenticationService {
     /// Sign out the user by removing the API key
     func signOut() {
         apiKey = nil
-        UserDefaults.standard.removeObject(forKey: "IDFMobilite_ApiKey")
+        _ = KeychainService.shared.deleteAPIKey()
         authStatus = .unauthenticated
     }
     
