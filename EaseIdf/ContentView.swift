@@ -21,7 +21,24 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             VStack {
-                // Affichage de la liste des favoris
+                if !authViewModel.isAuthenticated {
+                        HStack {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(.orange)
+                                .padding(.bottom, 4)
+                            
+                            Text("Authentification requise")
+                                .font(.subheadline)
+                                .fontWeight(.bold)
+                            
+                            Button("clé API") {
+                                showAuthModal = true
+                            }
+                        }
+                        .padding(.top, 5)
+                    }
+                
                 FavoritesListView(viewModel: favoritesViewModel)
             }
             .navigationTitle("EaseIdf")
