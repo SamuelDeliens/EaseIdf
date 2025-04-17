@@ -11,7 +11,8 @@ import Combine
 
 class SettingsViewModel: ObservableObject {
     @Published var apiKey: String = ""
-    @Published var refreshInterval: Double = 60.0
+    @Published var refreshInterval: Double = 120.0
+    @Published var visualRefreshInterval: Double = 60.0
     @Published var showOnlyUpcomingDepartures: Bool = true
     @Published var numberOfDeparturesToShow: Int = 3
     @Published var showSavedAlert: Bool = false
@@ -98,6 +99,9 @@ class SettingsViewModel: ObservableObject {
         
         // Update widget refresh interval
         WidgetService.shared.scheduleBackgroundUpdates(interval: refreshInterval)
+        
+        // Notify any active view models about the setting changes
+        NotificationCenter.default.post(name: Notification.Name("SettingsChanged"), object: nil)
         
         // Show confirmation
         showSavedAlert = true

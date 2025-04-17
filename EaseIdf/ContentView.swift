@@ -16,6 +16,7 @@ struct ContentView: View {
     @State private var showingAddTransport = false
     @State private var initialLoadComplete = false
     
+    @State var showEditTransportList = false
     @State var showAuthModal = true
     
     var body: some View {
@@ -39,15 +40,15 @@ struct ContentView: View {
                         .padding(.top, 5)
                     }
                 
-                FavoritesListView(viewModel: favoritesViewModel)
+                FavoritesListView(viewModel: favoritesViewModel, showEditTransportList: $showEditTransportList)
             }
             .navigationTitle("EaseIdf")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: {
-                        showingSettings = true
-                    }) {
-                        Image(systemName: "gear")
+                    Button(showEditTransportList ? "Done" : "Edit") {
+                        withAnimation {
+                            showEditTransportList.toggle()
+                        }
                     }
                 }
                 
@@ -56,6 +57,14 @@ struct ContentView: View {
                         showingAddTransport = true
                     }) {
                         Image(systemName: "plus")
+                    }
+                }
+                
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: {
+                        showingSettings = true
+                    }) {
+                        Image(systemName: "gear")
                     }
                 }
             }

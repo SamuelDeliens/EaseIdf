@@ -13,7 +13,11 @@ class WidgetService {
     static let shared = WidgetService()
     
     private init() {}
-        
+    
+    private var dataRefreshTimer: Timer?
+    private var visualRefreshTimer: Timer?
+    private var lastDataRefresh: Date = Date()
+    
     /// Save departures data for widget access
     func saveWidgetData(departures: [String: [Departure]], activeTransportFavorites: [TransportFavorite]) {
         let userData = WidgetData(
@@ -38,6 +42,7 @@ class WidgetService {
         var allDepartures: [String: [Departure]] = [:]
         
         let settings = StorageService.shared.getUserSettings()
+        lastDataRefresh = Date()
         
         // Log pour débogage
         print("Refresh du widget: \(activeFavorites.count) favoris actifs")
@@ -57,29 +62,61 @@ class WidgetService {
                 print("Erreur lors de la récupération des départs pour le widget: \(error.localizedDescription)")
             }
         }
-                
+        
         // Save for widget access
         saveWidgetData(departures: allDepartures, activeTransportFavorites: activeFavorites)
         
-        print("Widget mis à jour avec \(allDepartures.count) linges avec \(settings.numberOfDeparturesToShow) départs")
+        print("Widget mis à jour avec \(allDepartures.count) lignes avec \(settings.numberOfDeparturesToShow) départs")
+    }
+    
+    /// Update widget visually without fetching new data
+    func updateWidgetVisually() async {
+        if let sharedDefaults = UserDefaults(suiteName: "group.com.samueldeliens.EaseIdf"),
+           let data = sharedDefaults.data(forKey: "widgetData"),
+           let widgetData = try? JSONDecoder().decode(WidgetData.self, from: data) {
+            
+            let activeFavorites = ConditionEvaluationService.shared.getCurrentlyActiveTransportFavorites()
+            var updatedDepartures = widgetData.departures
+            
+            // Mise à jour des favoris actifs
+            saveWidgetData(departures: updatedDepartures, activeTransportFavorites: activeFavorites)
+            
+            // Refresh widgets pour montrer les mises à jour visuelles
+            refreshWidgets()
+        }
     }
     
     /// Schedule periodic background updates for widget data
     func scheduleBackgroundUpdates(interval: TimeInterval = 600) {
-        // Configuration de l'intervalle de rafraîchissement
+        // Annuler les timers existants
+        dataRefreshTimer?.invalidate()
+        visualRefreshTimer?.invalidate()
+        
+        // Configuration de l'intervalle de rafraîchissement des données
         if let sharedDefaults = UserDefaults(suiteName: "group.com.samueldeliens.EaseIdf") {
             sharedDefaults.set(interval, forKey: "widgetRefreshInterval")
+        }
+        
+        // Créer un nouveau timer pour les mises à jour de données (intervalles longs)
+        dataRefreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            Task {
+                await self?.refreshWidgetData()
+            }
+        }
+        
+        // Créer un nouveau timer pour les mises à jour visuelles (60 secondes)
+        visualRefreshTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            Task {
+                await self?.updateWidgetVisually()
+            }
         }
         
         // En production, cette fonction utiliserait BGAppRefreshTask ou BGProcessingTask
         // pour planifier des mises à jour périodiques en arrière-plan
         
-        // Pour une implémentation simple, nous pouvons utiliser un timer local
-        DispatchQueue.main.async {
-            // Planifier la première mise à jour
-            Task {
-                await self.refreshWidgetData()
-            }
+        // Planifier la première mise à jour
+        Task {
+            await self.refreshWidgetData()
         }
     }
     

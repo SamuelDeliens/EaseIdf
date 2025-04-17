@@ -10,11 +10,24 @@ import SwiftData
 
 struct FavoritesListView: View {
     @ObservedObject var viewModel: FavoritesViewModel
-    @State private var isEditing = false
+    @Binding var showEditTransportList: Bool
     @State private var showingAddTransport = false
+    
+    private let timer = Timer.publish(every: 10, on: .main, in: .common).autoconnect()
     
     var body: some View {
         VStack {
+            // Affichage du temps écoulé depuis la dernière mise à jour des données
+            if !viewModel.favorites.isEmpty {
+                HStack {
+                    Spacer()
+                    Text("Dernière mise à jour : \(timeSinceLastRefresh)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal)
+                }
+            }
+            
             if viewModel.favorites.isEmpty {
                 emptyStateView
             } else {
@@ -32,6 +45,15 @@ struct FavoritesListView: View {
             viewModel.updateActiveFavorites()
             viewModel.refreshDepartures()
         }
+        .onReceive(timer) { _ in
+            // Mise à jour du temps écoulé depuis la dernière mise à jour
+            viewModel.updateVisualDepartures()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("SettingsChanged"))) { _ in
+            // Réinitialiser les timers lorsque les paramètres sont modifiés
+            viewModel.stopRefreshTimers()
+            viewModel.loadFavorites() // Cela réinitialisera les timers avec les nouveaux paramètres
+        }
         .sheet(isPresented: $showingAddTransport) {
             AddTransportView()
                 .onDisappear {
@@ -41,22 +63,26 @@ struct FavoritesListView: View {
         }
     }
     
+    private var timeSinceLastRefresh: String {
+        let interval = Date().timeIntervalSince(viewModel.lastDataRefresh)
+        
+        if interval < 60 {
+            return "à l'instant"
+        } else if interval < 120 {
+            return "il y a 1 minute"
+        } else if interval < 3600 {
+            return "il y a \(Int(interval / 60)) minutes"
+        } else if interval < 7200 {
+            return "il y a 1 heure"
+        } else {
+            return "il y a \(Int(interval / 3600)) heures"
+        }
+    }
+    
     private var favoritesList: some View {
         VStack(spacing: 0) {
-            // Edit button
-            HStack {
-                Spacer()
-                Button(isEditing ? "Terminé" : "Modifier") {
-                    withAnimation {
-                        isEditing.toggle()
-                    }
-                }
-                .padding(.horizontal)
-            }
-            .padding(.vertical, 8)
-            
             // List of favorites
-            if isEditing {
+            if showEditTransportList {
                 editableList
             } else {
                 ScrollView {
@@ -185,12 +211,5 @@ struct FavoritesListView: View {
                     .cornerRadius(10)
             )
             .allowsHitTesting(true)
-    }
-}
-
-struct FavoritesListView_Previews: PreviewProvider {
-    static var previews: some View {
-        let viewModel = FavoritesViewModel()
-        return FavoritesListView(viewModel: viewModel)
     }
 }

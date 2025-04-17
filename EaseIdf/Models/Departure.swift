@@ -33,4 +33,14 @@ struct Departure: Identifiable, Codable {
             return "\(hours)h\(remainingMinutes)"
         }
     }
+    
+    // Nouvelle méthode: savoir si le départ est déjà passé
+    var isPassed: Bool {
+        return expectedDepartureTime < Date()
+    }
+    
+    // Nouvelle méthode: récupérer les minutes restantes (pour filtrage)
+    var remainingMinutes: Int {
+        return max(0, Int(expectedDepartureTime.timeIntervalSinceNow / 60))
+    }
 }

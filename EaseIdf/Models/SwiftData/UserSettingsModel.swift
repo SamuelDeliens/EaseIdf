@@ -12,19 +12,28 @@ import SwiftData
 final class UserSettingsModel {
     var apiKey: String?
     var refreshInterval: Double
+    var visualRefreshInterval: Double
     var showOnlyUpcomingDepartures: Bool
     var numberOfDeparturesToShow: Int
+    var lastAppLaunch: Date
+    var lastFullDataRefresh: Date?
     
     init(
         apiKey: String? = nil,
-        refreshInterval: Double = 60.0,
+        refreshInterval: Double = 300.0,
+        visualRefreshInterval: Double = 60.0,
         showOnlyUpcomingDepartures: Bool = true,
-        numberOfDeparturesToShow: Int = 3
+        numberOfDeparturesToShow: Int = 3,
+        lastAppLaunch: Date = Date(),
+        lastFullDataRefresh: Date? = nil
     ) {
         self.apiKey = apiKey
         self.refreshInterval = refreshInterval
+        self.visualRefreshInterval = visualRefreshInterval
         self.showOnlyUpcomingDepartures = showOnlyUpcomingDepartures
         self.numberOfDeparturesToShow = numberOfDeparturesToShow
+        self.lastAppLaunch = lastAppLaunch
+        self.lastFullDataRefresh = lastFullDataRefresh
     }
     
     // Convert to struct format
@@ -33,8 +42,11 @@ final class UserSettingsModel {
             favorites: [], // Favorites are handled separately via PersistenceService
             apiKey: apiKey,
             refreshInterval: refreshInterval,
+            visualRefreshInterval: visualRefreshInterval,
             showOnlyUpcomingDepartures: showOnlyUpcomingDepartures,
-            numberOfDeparturesToShow: numberOfDeparturesToShow
+            numberOfDeparturesToShow: numberOfDeparturesToShow,
+            lastAppLaunch: lastAppLaunch,
+            lastFullDataRefresh: lastFullDataRefresh
         )
     }
     
@@ -43,8 +55,11 @@ final class UserSettingsModel {
         return UserSettingsModel(
             apiKey: settings.apiKey,
             refreshInterval: settings.refreshInterval,
+            visualRefreshInterval: settings.visualRefreshInterval,
             showOnlyUpcomingDepartures: settings.showOnlyUpcomingDepartures,
-            numberOfDeparturesToShow: settings.numberOfDeparturesToShow
+            numberOfDeparturesToShow: settings.numberOfDeparturesToShow,
+            lastAppLaunch: settings.lastAppLaunch,
+            lastFullDataRefresh: settings.lastFullDataRefresh
         )
     }
 }

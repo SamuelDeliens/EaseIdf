@@ -70,7 +70,7 @@ struct FavoriteCardView: View {
                     Text(nextDeparture.waitingTime)
                         .font(.title3)
                         .fontWeight(.semibold)
-                        .foregroundColor(.green)
+                        .foregroundColor(getDepartureColor(nextDeparture))
                 } else {
                     HStack(spacing: 2) {
                         Image(systemName: "clock.badge.exclamationmark")
@@ -112,6 +112,21 @@ struct FavoriteCardView: View {
             }
         }
     }
+    
+    // Couleur du temps d'attente basée sur les minutes restantes
+    private func getDepartureColor(_ departure: Departure) -> Color {
+        let minutes = departure.remainingMinutes
+        
+        if minutes <= 0 {
+            return .red     // Imminent ou déjà passé
+        } else if minutes <= 3 {
+            return .orange  // Très proche
+        } else if minutes <= 5 {
+            return .yellow  // Proche
+        } else {
+            return .green   // Temps suffisant
+        }
+    }
 }
 
 struct DepartureRow: View {
@@ -138,7 +153,7 @@ struct DepartureRow: View {
             Text(departure.waitingTime)
                 .font(.headline)
                 .fontWeight(.semibold)
-                .foregroundColor(.green)
+                .foregroundColor(getDepartureTimeColor(departure))
         }
     }
     
@@ -161,6 +176,21 @@ struct DepartureRow: View {
             return minutes > 5 ? .red : .orange
         } else {
             return .blue
+        }
+    }
+    
+    // Couleur de la durée d'attente basée sur le temps restant
+    private func getDepartureTimeColor(_ departure: Departure) -> Color {
+        let minutes = departure.remainingMinutes
+        
+        if minutes <= 0 {
+            return .red     // Imminent ou déjà passé
+        } else if minutes <= 3 {
+            return .orange  // Très proche
+        } else if minutes <= 5 {
+            return .yellow  // Proche
+        } else {
+            return .green   // Temps suffisant
         }
     }
 }
