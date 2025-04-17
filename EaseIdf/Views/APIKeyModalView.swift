@@ -55,6 +55,17 @@ struct APIKeyModalView: View {
                     .padding(.horizontal)
                     .padding(.bottom, 4)
                 
+                // Message sur la sécurité
+                HStack {
+                    Image(systemName: "lock.fill")
+                        .foregroundColor(.green)
+                    
+                    Text("Votre clé API sera stockée de manière sécurisée dans le Keychain iOS.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.horizontal)
+                
                 // Champ de saisie
                 TextField("Clé API", text: $keyInputField)
                     .padding()
@@ -122,6 +133,11 @@ struct APIKeyModalView: View {
         }
         .onAppear {
             keyInputField = viewModel.apiKey
+            
+            // Afficher automatiquement le clavier
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                isInputFieldFocused = true
+            }
         }
     }
 }

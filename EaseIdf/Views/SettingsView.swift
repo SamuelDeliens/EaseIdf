@@ -13,6 +13,8 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var viewModel = SettingsViewModel()
     
+    @State private var showingKeychainDebug = false
+    
     var body: some View {
         NavigationStack {
             Form {
@@ -56,6 +58,10 @@ struct SettingsView: View {
                     Button("Corriger les conditions de localisation") {
                         LocationDebugService.shared.fixLocationConditions()
                     }
+                    
+                    Button("Débogage Keychain") {
+                        showingKeychainDebug = true
+                    }
                 }
                 
                 Section(header: Text("Préférences d'affichage")) {
@@ -68,7 +74,7 @@ struct SettingsView: View {
                     VStack {
                         Text("Intervalle d'actualisation: \(viewModel.formatTimeInterval(viewModel.refreshInterval))")
                         
-                        Slider(value: $viewModel.refreshInterval, in: 30...600, step: 30) {
+                        Slider(value: $viewModel.refreshInterval, in: 30...300, step: 30) {
                             Text("Intervalle d'actualisation")
                         }
                     }
@@ -101,6 +107,9 @@ struct SettingsView: View {
             }
             .alert("Paramètres sauvegardés", isPresented: $viewModel.showSavedAlert) {
                 Button("OK") { dismiss() }
+            }
+            .sheet(isPresented: $showingKeychainDebug) {
+                KeychainDebugView()
             }
         }
         .onAppear {
