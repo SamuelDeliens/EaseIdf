@@ -14,6 +14,7 @@ struct ContentView: View {
     @StateObject private var favoritesViewModel = FavoritesViewModel()
     @State private var showingSettings = false
     @State private var showingAddTransport = false
+    @State private var initialLoadComplete = false
     
     var body: some View {
         NavigationStack {
@@ -51,8 +52,28 @@ struct ContentView: View {
                         }
                 }
                 .onAppear {
-                    // Pass the model context to the favorites view model
-                    favoritesViewModel.setModelContext(modelContext)
+                    if !initialLoadComplete {
+                        // S'assurer que les données sont chargées au moins une fois
+                        Task {
+                            // Pass the model context to the favorites view model
+                            favoritesViewModel.setModelContext(modelContext)
+                            
+                            if LineDataService.shared.getAllLines().isEmpty ||
+                               StopDataService.shared.getAllStops().isEmpty {
+                                print("⚠️ Des données sont manquantes après le splash screen, rechargement...")
+                                
+                                if LineDataService.shared.getAllLines().isEmpty {
+                                    LineDataService.shared.loadLinesFromFile(named: "transport_lines")
+                                }
+                                
+                                if StopDataService.shared.getAllStops().isEmpty {
+                                    StopDataService.shared.loadStopsFromFile(named: "transport_stops")
+                                }
+                            }
+                            
+                            initialLoadComplete = true
+                        }
+                    }
                 }
             } else {
                 // Authentication view
