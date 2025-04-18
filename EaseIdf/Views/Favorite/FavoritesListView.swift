@@ -122,6 +122,7 @@ struct FavoritesListView: View {
                                     }
                                 },
                                 editAction: {
+                                    viewModel.stopRefreshTimers()
                                     selectedEditTransport = favorite
                                     showEditTransport = true
                                 }

@@ -234,6 +234,7 @@ class FavoritesViewModel: ObservableObject {
     }
     
     func stopRefreshTimers() {
+        print("stopRefreshTimers")
         dataRefreshTimer?.invalidate()
         dataRefreshTimer = nil
         

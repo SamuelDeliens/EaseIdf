@@ -200,6 +200,7 @@ class EditFavoriteViewModel: ObservableObject {
             StorageService.shared.saveFavorite(updatedFavorite)
             showingSavedAlert = true
         }
+        
     }
     
     func saveDayOfWeekConditionEdit(editingIndex: Int?, dayOfWeekCondition: DayOfWeekCondition) {
