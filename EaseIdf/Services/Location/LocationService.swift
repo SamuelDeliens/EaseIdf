@@ -56,6 +56,7 @@ class LocationService: NSObject {
         // Set up a timer to periodically fetch location
         locationUpdateTimer?.invalidate()
         locationUpdateTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            print("location timer")
             self?.locationManager.requestLocation()
         }
     }

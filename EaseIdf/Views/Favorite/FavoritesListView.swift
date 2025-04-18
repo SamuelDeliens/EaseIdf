@@ -24,9 +24,7 @@ struct FavoritesListView: View {
     )
     
     @State private var showingAddTransport = false
-    
-    private let timer = Timer.publish(every: 10, on: .main, in: .common).autoconnect()
-    
+        
     var body: some View {
         VStack {
             // Affichage du temps écoulé depuis la dernière mise à jour des données
@@ -56,10 +54,6 @@ struct FavoritesListView: View {
         .onAppear {
             viewModel.updateActiveFavorites()
             viewModel.refreshDepartures()
-        }
-        .onReceive(timer) { _ in
-            // Mise à jour du temps écoulé depuis la dernière mise à jour
-            viewModel.updateVisualDepartures()
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("SettingsChanged"))) { _ in
             // Réinitialiser les timers lorsque les paramètres sont modifiés
