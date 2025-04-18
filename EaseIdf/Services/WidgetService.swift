@@ -107,7 +107,7 @@ class WidgetService {
         
         // Créer un nouveau timer pour les mises à jour visuelles (60 secondes)
         visualRefreshTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
-            print("widget visual data refresh timer fired")
+            print("widget visual refresh timer fired")
             Task {
                 await self?.updateWidgetVisually()
             }
