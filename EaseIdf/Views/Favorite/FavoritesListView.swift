@@ -127,7 +127,7 @@ struct FavoritesListView: View {
                                     // Badge pour indiquer si le favori est inactif
                                     if !isActive {
                                         inactiveBadge
-                                            .offset(x: 20, y: -20)
+                                            .offset(x: 10, y: -10)
                                     }
                                 }
                             }
@@ -148,15 +148,13 @@ struct FavoritesListView: View {
     private var inactiveBadge: some View {
         HStack {
             Image(systemName: "moon.fill")
-                .font(.body)
+                .font(.system(size: 16))
         }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 4)
+        .padding(5)
         .background(
-            Capsule()
+            Circle()
                 .fill(Color.secondary.opacity(0.2))
         )
-        .padding(8)
     }
     
     private var editableList: some View {
