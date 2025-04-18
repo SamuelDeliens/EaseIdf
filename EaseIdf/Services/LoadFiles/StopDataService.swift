@@ -31,6 +31,8 @@ class StopDataService {
     }
     
     /// Charger les arrêts depuis un fichier JSON local
+    // Voici une version corrigée de la partie qui pose problème
+
     func loadStopsFromFile(named filename: String) {
         isLoading = true
         
@@ -54,36 +56,48 @@ class StopDataService {
                 }
                 
                 let data = try Data(contentsOf: url)
-                let decoder = JSONDecoder()
                 
-                // Décodage direct en tant que tableau d'ImportedStop
-                let stops = try decoder.decode([ImportedStop].self, from: data)
-                print("stops data counted", stops.count)
-                
-                // Sauvegarder dans SwiftData sur le thread principal
-                await MainActor.run {
-                    // Effacer d'abord les données existantes
-                    let clearDescriptor = FetchDescriptor<TransportStopModel>()
-                    if let existingStops = try? modelContext.fetch(clearDescriptor) {
-                        for stop in existingStops {
-                            modelContext.delete(stop)
-                        }
-                    }
+                // Convertir les données en String pour correction
+                if let jsonString = String(data: data, encoding: .utf8) {
+                    let correctedString = jsonString.correctingEncoding()
                     
-                    // Ajouter les nouvelles données
-                    let batchSize = 200
-                    for i in stride(from: 0, to: stops.count, by: batchSize) {
-                        let end = min(i + batchSize, stops.count)
-                        let batch = stops[i..<end]
+                    // Reconvertir la chaîne corrigée en Data
+                    if let correctedData = correctedString.data(using: .utf8) {
+                        // Utiliser un décodeur standard
+                        let decoder = JSONDecoder()
                         
-                        for stop in batch {
-                            let stopModel = TransportStopModel.fromImportedStop(stop)
-                            modelContext.insert(stopModel)
+                        // Configurer une stratégie de clé personnalisée si nécessaire
+                        // decoder.keyDecodingStrategy = .convertFromSnakeCase
+                        
+                        let stops = try decoder.decode([ImportedStop].self, from: correctedData)
+                        print("stops data counted", stops.count)
+                        
+                        // Sauvegarder dans SwiftData sur le thread principal
+                        await MainActor.run {
+                            // Effacer d'abord les données existantes
+                            let clearDescriptor = FetchDescriptor<TransportStopModel>()
+                            if let existingStops = try? modelContext.fetch(clearDescriptor) {
+                                for stop in existingStops {
+                                    modelContext.delete(stop)
+                                }
+                            }
+                            
+                            // Ajouter les nouvelles données
+                            let batchSize = 200
+                            for i in stride(from: 0, to: stops.count, by: batchSize) {
+                                let end = min(i + batchSize, stops.count)
+                                let batch = stops[i..<end]
+                                
+                                for stop in batch {
+                                    let stopModel = TransportStopModel.fromImportedStop(stop)
+                                    modelContext.insert(stopModel)
+                                }
+                            }
+                            
+                            try? modelContext.save()
+                            self.isLoading = false
                         }
                     }
-                    
-                    try? modelContext.save()
-                    self.isLoading = false
                 }
             } catch {
                 print("Erreur lors du chargement des arrêts: \(error)")

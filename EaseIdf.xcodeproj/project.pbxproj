@@ -73,6 +73,7 @@
 			membershipExceptions = (
 				Helpers/Color.swift,
 				Helpers/Direction.swift,
+				Helpers/String.swift,
 				Models/Coordinates.swift,
 				Models/Departure.swift,
 				Models/DisplayCondition.swift,
