@@ -25,7 +25,7 @@ struct DayOfWeekConditionView: View {
         self.saveDayOfWeekCondition = saveDayOfWeekCondition
                         
         self.initialDays = initialDays.isEmpty ? self.initialDays : initialDays
-        _selectedDays = State(initialValue: Set(initialDays))
+        _selectedDays = State(initialValue: Set(self.initialDays))
     }
     
     var body: some View {
