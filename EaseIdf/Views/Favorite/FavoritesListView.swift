@@ -101,7 +101,7 @@ struct FavoritesListView: View {
                 editableList
             } else {
                 ScrollView {
-                    LazyVStack(spacing: 16) {
+                    VStack(spacing: 16) {
                         ForEach(viewModel.favorites) { favorite in
                             let departures = viewModel.departures[favorite.id.uuidString] ?? []
                             let isActive = viewModel.activeFavorites.contains(where: { $0.id == favorite.id })
@@ -127,11 +127,12 @@ struct FavoritesListView: View {
                                     // Badge pour indiquer si le favori est inactif
                                     if !isActive {
                                         inactiveBadge
-                                            .offset(x: 15, y: -15)
+                                            .offset(x: 20, y: -20)
                                     }
                                 }
                             }
                             .padding(.horizontal)
+                            .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                     .padding(.vertical)
@@ -169,10 +170,7 @@ struct FavoritesListView: View {
                     
                     Spacer()
                     
-                    if viewModel.activeFavorites.contains(where: { $0.id == favorite.id }) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                    } else {
+                    if !viewModel.activeFavorites.contains(where: { $0.id == favorite.id }) {
                         Image(systemName: "moon.fill")
                             .foregroundColor(.secondary)
                     }

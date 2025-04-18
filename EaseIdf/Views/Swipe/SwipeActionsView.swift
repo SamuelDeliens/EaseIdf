@@ -41,22 +41,22 @@ struct SwipeActionsView<Content: View>: View {
             
             ZStack(alignment: .trailing) {
                 
-                HStack() {
+                HStack(spacing: 0) {
                     Spacer()
                     
                     Rectangle()
-                        .frame(width: max(0.0, geometry.size.width - securityLeftSide), height: 67)
+                        .frame(width: max(0.0, geometry.size.width - securityLeftSide), height: geometry.size.height)
                         .foregroundColor(.blue)
                 }
                 
-                HStack() {
+                HStack(spacing: 0) {
                     Spacer()
                     
                     Rectangle()
-                        .frame(width: isSwipeComplete ? 0.0 : geometry.size.width - securityLeftSide, height: 67)
+                        .frame(width: isSwipeComplete ? 0.0 : geometry.size.width - securityLeftSide, height: geometry.size.height)
                         .foregroundColor(.red)
                         .overlay(
-                            HStack() {
+                            HStack(spacing: 0) {
                                 Spacer()
                                     .frame(width: max(0.0, normalWidthDeleteFrame - securityLeftSide))
                                 
@@ -73,14 +73,14 @@ struct SwipeActionsView<Content: View>: View {
                         )
                 }
                 
-                HStack() {
+                HStack(spacing: 0) {
                     Spacer()
                     
                     Rectangle()
-                        .frame(width: isSwipeComplete ? specWidthEditFrame : normalWidthEditFrame, height: 67)
+                        .frame(width: isSwipeComplete ? specWidthEditFrame : normalWidthEditFrame, height: geometry.size.height)
                         .foregroundColor(.blue)
                         .overlay(
-                            HStack() {
+                            HStack(spacing: 0) {
                                 Image(systemName: "pencil")
                                     .font(.title3)
                                     .foregroundColor(.white)
@@ -99,7 +99,7 @@ struct SwipeActionsView<Content: View>: View {
                 }
             }
             .cornerRadius(12)
-            .frame(height: 67)
+            .frame(height: geometry.size.height)
             
             
             content
@@ -200,5 +200,6 @@ struct SwipeActionsView<Content: View>: View {
                     )
                 }
             }
+        .frame(minHeight: 67)
     }
 }
