@@ -8,39 +8,32 @@
 import SwiftUI
 
 struct TimeRangeConditionView: View {
-    @ObservedObject var viewModel: AddTransportViewModel
-    
-    // Pour l'édition d'une condition existante
     var editingIndex: Int?
+
+    let saveTimeRangeCondition: (Int?, TimeRangeCondition) -> Void
     
     @State private var startTime: Date
     @State private var endTime: Date
     
-    init(viewModel: AddTransportViewModel, editingIndex: Int? = nil) {
-        self.viewModel = viewModel
+    // Initialisation avec AddTransportViewModel
+    init(editingIndex: Int? = nil,
+         saveTimeRangeCondition: @escaping (Int?, TimeRangeCondition) -> Void,
+         startTime: Date?,
+         endTime: Date?
+    ) {
         self.editingIndex = editingIndex
+        self.saveTimeRangeCondition = saveTimeRangeCondition
         
-        // Initialiser avec les valeurs existantes ou des valeurs par défaut
-        if let index = editingIndex,
-           index < viewModel.displayConditions.count,
-           let timeRange = viewModel.displayConditions[index].timeRange {
-            _startTime = State(initialValue: timeRange.startTime)
-            _endTime = State(initialValue: timeRange.endTime)
-        } else {
-            // Valeurs par défaut: 8h - 10h
-            var calendar = Calendar.current
-            var dateComponents = calendar.dateComponents([.year, .month, .day], from: Date())
-            
-            // Start time: 8:00 AM
-            dateComponents.hour = 8
-            dateComponents.minute = 0
-            _startTime = State(initialValue: calendar.date(from: dateComponents) ?? Date())
-            
-            // End time: 10:00 AM
-            dateComponents.hour = 10
-            dateComponents.minute = 0
-            _endTime = State(initialValue: calendar.date(from: dateComponents) ?? Date())
-        }
+        var calendar = Calendar.current
+        var dateComponents = calendar.dateComponents([.year, .month, .day], from: Date())
+        dateComponents.hour = 8
+        dateComponents.minute = 0
+        
+        _startTime = startTime != nil ? State(initialValue: startTime!) : State(initialValue: calendar.date(from: dateComponents) ?? Date())
+        
+        dateComponents.hour = 10
+        dateComponents.minute = 0
+        _endTime = endTime != nil ? State(initialValue: endTime!) : State(initialValue: calendar.date(from: dateComponents) ?? Date())
     }
     
     var body: some View {
@@ -71,7 +64,12 @@ struct TimeRangeConditionView: View {
             
             Section {
                 Button("Enregistrer") {
-                    saveTimeRangeCondition()
+                    saveTimeRangeCondition(
+                        self.editingIndex,
+                        TimeRangeCondition(
+                            startTime: startTime,
+                            endTime: endTime
+                    ))
                 }
                 .disabled(!isTimeRangeValid)
                 .frame(maxWidth: .infinity)
@@ -87,29 +85,6 @@ struct TimeRangeConditionView: View {
         let endComponents = calendar.dateComponents([.hour, .minute], from: endTime)
         
         return startComponents != endComponents
-    }
-    
-    private func saveTimeRangeCondition() {
-        let timeRangeCondition = TimeRangeCondition(
-            startTime: startTime,
-            endTime: endTime
-        )
-        
-        if let index = editingIndex {
-            // Mettre à jour une condition existante
-            viewModel.updateTimeRangeCondition(at: index, timeRange: timeRangeCondition)
-        } else {
-            // Créer une nouvelle condition
-            let newCondition = DisplayCondition(
-                type: .timeRange,
-                isActive: true,
-                timeRange: timeRangeCondition
-            )
-            viewModel.addCondition(newCondition)
-        }
-        
-        // Fermer le sheet
-        viewModel.closeConditionSheet()
     }
     
     private func showPresetOptions() {

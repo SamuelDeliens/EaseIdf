@@ -1,5 +1,13 @@
 //
-//  LocationConditionView.swift
+//  StopAnnotation.swift
+//  EaseIdf
+//
+//  Created by Samuel DELIENS on 18/04/2025.
+//
+
+
+//
+//  EditLocationConditionView.swift
 //  EaseIdf
 //
 //  Created by Samuel DELIENS on 15/04/2025.
@@ -9,15 +17,8 @@ import SwiftUI
 import CoreLocation
 import MapKit
 
-struct StopAnnotation: Identifiable {
-    let id: String
-    let name: String
-    let coordinate: CLLocationCoordinate2D
-    var isSelected: Bool
-}
-
-struct LocationConditionView: View {
-    @ObservedObject var viewModel: AddTransportViewModel
+struct EditLocationConditionView: View {
+    @ObservedObject var viewModel: EditFavoriteViewModel
     
     // Pour l'édition d'une condition existante
     var editingIndex: Int?
@@ -35,11 +36,10 @@ struct LocationConditionView: View {
     // Pour afficher les arrêts
     @State private var stopAnnotations: [StopAnnotation] = []
     
-    init(viewModel: AddTransportViewModel, editingIndex: Int? = nil) {
+    init(viewModel: EditFavoriteViewModel, editingIndex: Int? = nil) {
         self.viewModel = viewModel
         self.editingIndex = editingIndex
         
-        // Initialiser avec les valeurs existantes ou des valeurs par défaut
         if let index = editingIndex,
            index < viewModel.displayConditions.count,
            let locationCondition = viewModel.displayConditions[index].locationCondition {
@@ -58,13 +58,12 @@ struct LocationConditionView: View {
                 ),
                 span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
             ))
-        } else if let stop = viewModel.selectedStop {
+        } else {
             // Par défaut, utiliser l'arrêt sélectionné comme position
-            _locationName = State(initialValue: stop.name_stop)
+            self.locationName = viewModel.favorite.wrappedValue.stopName != nil ? viewModel.favorite.wrappedValue.stopName! : ""
             
-            // Obtenir les coordonnées de l'arrêt
-            let stopLatitude = stop.latitude
-            let stopLongitude = stop.longitude
+            let stopLatitude = viewModel.favorite.wrappedValue.stopLatitude != nil ? viewModel.favorite.wrappedValue.stopLatitude! : 0.0
+            let stopLongitude = viewModel.favorite.wrappedValue.stopLongitude != nil ? viewModel.favorite.wrappedValue.stopLongitude! : 0.0
             
             _selectedLocation = State(initialValue: CLLocationCoordinate2D(
                 latitude: stopLatitude,
@@ -91,13 +90,8 @@ struct LocationConditionView: View {
                     .onChange(of: isUsingCurrentLocation) { isCurrentLocation in
                         if isCurrentLocation {
                             useCurrentLocation()
-                        } else if let stop = viewModel.selectedStop {
-                            // Revenir à l'arrêt sélectionné
-                            locationName = stop.name_stop
-                            selectedLocation = CLLocationCoordinate2D(
-                                latitude: stop.latitude,
-                                longitude: stop.longitude
-                            )
+                        } else {
+                            useStopLocation()
                             centerMapOnSelectedLocation()
                         }
                     }
@@ -201,6 +195,17 @@ struct LocationConditionView: View {
         }
     }
     
+    private func useStopLocation() {
+        self.locationName = viewModel.favorite.wrappedValue.stopName != nil ? viewModel.favorite.wrappedValue.stopName! : ""
+        
+        let stopLatitude = viewModel.favorite.wrappedValue.stopLatitude != nil ? viewModel.favorite.wrappedValue.stopLatitude! : 0.0
+        let stopLongitude = viewModel.favorite.wrappedValue.stopLongitude != nil ? viewModel.favorite.wrappedValue.stopLongitude! : 0.0
+        selectedLocation = CLLocationCoordinate2D(
+            latitude: stopLatitude,
+            longitude: stopLongitude
+        )
+    }
+    
     private func useCurrentLocation() {
         locationName = "Ma position actuelle"
         
@@ -241,7 +246,7 @@ struct LocationConditionView: View {
                     latitude: stop.latitude,
                     longitude: stop.longitude
                 ),
-                isSelected: stop.id_stop == viewModel.selectedStop?.id_stop
+                isSelected: stop.id_stop == viewModel.favorite.wrappedValue.stopId
             )
         }
     }

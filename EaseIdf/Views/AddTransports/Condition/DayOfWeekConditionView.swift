@@ -1,38 +1,31 @@
 //
-//  DayOfWeekConditionView.swift
+//  DayOfWeekConditionViewAdapted.swift
 //  EaseIdf
 //
-//  Created by Samuel DELIENS on 15/04/2025.
+//  Created by Samuel DELIENS on 17/04/2025.
 //
+
 
 import SwiftUI
 
 struct DayOfWeekConditionView: View {
-    @ObservedObject var viewModel: AddTransportViewModel
+    let editingIndex: Int?
+    let saveDayOfWeekCondition: (Int?, DayOfWeekCondition) -> Void
     
-    // Pour l'édition d'une condition existante
-    var editingIndex: Int?
+    var initialDays: [Weekday] = [.monday, .tuesday, .wednesday, .thursday, .friday]
     
     @State private var selectedDays: Set<Weekday> = []
     
-    init(viewModel: AddTransportViewModel, editingIndex: Int? = nil) {
-        self.viewModel = viewModel
+    init(
+        editingIndex: Int? = nil,
+        saveDayOfWeekCondition: @escaping (Int?, DayOfWeekCondition) -> Void,
+        initialDays: [Weekday]
+    ) {
         self.editingIndex = editingIndex
-        
-        // Initialiser avec les valeurs existantes ou des valeurs par défaut
-        var initialDays: Set<Weekday> = []
-        
-        if let index = editingIndex,
-           index < viewModel.displayConditions.count,
-           let dayCondition = viewModel.displayConditions[index].dayOfWeekCondition {
-            // Si on édite une condition existante, utiliser ses jours
-            initialDays = Set(dayCondition.days)
-        } else {
-            // Par défaut, sélectionner les jours de semaine (lundi-vendredi)
-            initialDays = [.monday, .tuesday, .wednesday, .thursday, .friday]
-        }
-        
-        _selectedDays = State(initialValue: initialDays)
+        self.saveDayOfWeekCondition = saveDayOfWeekCondition
+                        
+        self.initialDays = initialDays.isEmpty ? self.initialDays : initialDays
+        _selectedDays = State(initialValue: Set(initialDays))
     }
     
     var body: some View {
@@ -87,7 +80,12 @@ struct DayOfWeekConditionView: View {
             
             Section {
                 Button("Enregistrer") {
-                    saveDayOfWeekCondition()
+                    saveDayOfWeekCondition(
+                        self.editingIndex,
+                        DayOfWeekCondition(
+                            days: Array(self.selectedDays)
+                        )
+                    )
                 }
                 .disabled(selectedDays.isEmpty)
                 .frame(maxWidth: .infinity)
@@ -106,27 +104,5 @@ struct DayOfWeekConditionView: View {
         case .saturday: return "Samedi"
         case .sunday: return "Dimanche"
         }
-    }
-    
-    private func saveDayOfWeekCondition() {
-        let dayOfWeekCondition = DayOfWeekCondition(
-            days: Array(selectedDays)
-        )
-        
-        if let index = editingIndex {
-            // Mettre à jour une condition existante
-            viewModel.updateDayOfWeekCondition(at: index, dayOfWeek: dayOfWeekCondition)
-        } else {
-            // Créer une nouvelle condition
-            let newCondition = DisplayCondition(
-                type: .dayOfWeek,
-                isActive: true,
-                dayOfWeekCondition: dayOfWeekCondition
-            )
-            viewModel.addCondition(newCondition)
-        }
-        
-        // Fermer le sheet
-        viewModel.closeConditionSheet()
     }
 }

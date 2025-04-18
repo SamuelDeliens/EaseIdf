@@ -33,7 +33,7 @@ struct DayOfWeekCondition: Codable {
     var days: [Weekday]
 }
 
-enum Weekday: Int, Codable, CaseIterable {
+enum Weekday: Int, Codable, CaseIterable, Hashable {
     case sunday = 1, monday, tuesday, wednesday, thursday, friday, saturday
 }
 

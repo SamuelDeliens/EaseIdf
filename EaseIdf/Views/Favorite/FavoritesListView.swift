@@ -12,6 +12,17 @@ import SwiftData
 struct FavoritesListView: View {
     @ObservedObject var viewModel: FavoritesViewModel
     @Binding var showEditTransportList: Bool
+    
+    @State private var showEditTransport = false
+    @State private var selectedEditTransport = TransportFavorite(
+        id: UUID(),
+        stopId: "",
+        lineId: nil,
+        displayName: "",
+        displayConditions: [],
+        priority: 0
+    )
+    
     @State private var showingAddTransport = false
     
     private let timer = Timer.publish(every: 10, on: .main, in: .common).autoconnect()
@@ -62,6 +73,15 @@ struct FavoritesListView: View {
                     viewModel.loadFavorites()
                 }
         }
+        .sheet(isPresented: $showEditTransport) {
+            EditFavoriteView(favorite: $selectedEditTransport)
+                .onDisappear {
+                    viewModel.loadFavorites()
+                        Task {
+                            await WidgetService.shared.refreshWidgetData()
+                        }
+                }
+        }
     }
     
     private var timeSinceLastRefresh: String {
@@ -102,9 +122,8 @@ struct FavoritesListView: View {
                                     }
                                 },
                                 editAction: {
-                                    // Action d'édition (à implémenter plus tard)
-                                    print("Édition du favori: \(favorite.displayName)")
-                                    // Cette fonction sera développée ultérieurement
+                                    selectedEditTransport = favorite
+                                    showEditTransport = true
                                 }
                             ) {
                                 ZStack(alignment: .topTrailing) {

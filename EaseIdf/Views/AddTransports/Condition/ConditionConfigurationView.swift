@@ -51,61 +51,100 @@ struct ConditionConfigurationView: View {
     
     // Vue pour le sheet de condition active
     private var conditionSheetView: some View {
-        Group {
-            switch viewModel.activeConditionSheet {
-            case .timeRange:
-                NavigationStack {
-                    TimeRangeConditionView(
-                        viewModel: viewModel,
-                        editingIndex: viewModel.editingConditionIndex
-                    )
-                    .navigationTitle("Configuration horaire")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Retour") {
-                                viewModel.closeConditionSheet()
-                            }
-                        }
-                    }
-                }
-            case .dayOfWeek:
-                NavigationStack {
-                    DayOfWeekConditionView(
-                        viewModel: viewModel,
-                        editingIndex: viewModel.editingConditionIndex
-                    )
-                    .navigationTitle("Configuration des jours")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Retour") {
-                                viewModel.closeConditionSheet()
-                            }
-                        }
-                    }
-                }
-            case .location:
-                NavigationStack {
-                    LocationConditionView(
-                        viewModel: viewModel,
-                        editingIndex: viewModel.editingConditionIndex
-                    )
-                    .navigationTitle("Configuration de position")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Retour") {
-                                viewModel.closeConditionSheet()
-                            }
-                        }
-                    }
-                }
-            case .none:
-                EmptyView()
-            }
+        switch viewModel.activeConditionSheet {
+        case .timeRange:
+            return AnyView(timeRangeSheet)
+        case .dayOfWeek:
+            return AnyView(dayOfWeekSheet)
+        case .location:
+            return AnyView(locationSheet)
+        case .none:
+            return AnyView(EmptyView())
         }
     }
+
+    
+    private var timeRangeSheet: some View {
+        let timeRange: TimeRangeCondition? = {
+            if let index = viewModel.editingConditionIndex,
+               index < viewModel.displayConditions.count {
+                return viewModel.displayConditions[index].timeRange
+            } else {
+                return nil
+            }
+        }()
+        
+        return AnyView(
+                NavigationStack {
+                TimeRangeConditionView(
+                    editingIndex: viewModel.editingConditionIndex,
+                    saveTimeRangeCondition: viewModel.saveTimeRangeCondition,
+                    startTime: timeRange?.startTime,
+                    endTime: timeRange?.endTime
+                )
+                .navigationTitle("Configuration horaire")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Retour") {
+                            viewModel.closeConditionSheet()
+                        }
+                    }
+                }
+            }
+        )
+    }
+
+    private var dayOfWeekSheet: some View {
+        let dayOfWeek: DayOfWeekCondition? = {
+            if let index = viewModel.editingConditionIndex,
+               index < viewModel.displayConditions.count {
+                return viewModel.displayConditions[index].dayOfWeekCondition
+            } else {
+                return nil
+            }
+        }()
+        
+        return AnyView(
+            NavigationStack {
+                DayOfWeekConditionView(
+                    editingIndex: viewModel.editingConditionIndex,
+                    saveDayOfWeekCondition: viewModel.saveDayOfWeekCondition,
+                    initialDays: dayOfWeek?.days ?? []
+                )
+                .navigationTitle("Configuration des jours")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Retour") {
+                            viewModel.closeConditionSheet()
+                        }
+                    }
+                }
+            }
+        )
+    }
+
+    private var locationSheet: some View {
+        AnyView(
+            NavigationStack {
+                AddLocationConditionView(
+                    viewModel: viewModel,
+                    editingIndex: viewModel.editingConditionIndex
+                )
+                .navigationTitle("Configuration de position")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Retour") {
+                            viewModel.closeConditionSheet()
+                        }
+                    }
+                }
+            }
+        )
+    }
+
     
     private var favoriteRecapSection: some View {
         VStack(spacing: 8) {
@@ -215,7 +254,7 @@ struct ConditionConfigurationView: View {
                 
                 // Liste des conditions
                 ForEach(Array(viewModel.displayConditions.enumerated()), id: \.element.id) { index, condition in
-                    ConditionRow(condition: condition, index: index, viewModel: viewModel)
+                    AddConditionRow(condition: condition, index: index, viewModel: viewModel)
                         .padding(.vertical, 4)
                 }
                 
@@ -252,7 +291,7 @@ struct ConditionConfigurationView: View {
     }
 }
 
-struct ConditionRow: View {
+struct AddConditionRow: View {
     let condition: DisplayCondition
     let index: Int
     @ObservedObject var viewModel: AddTransportViewModel

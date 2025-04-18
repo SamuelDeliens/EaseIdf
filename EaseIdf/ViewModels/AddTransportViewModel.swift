@@ -257,6 +257,39 @@ class AddTransportViewModel: ObservableObject {
         }
     }
     
+    func saveDayOfWeekCondition(editingIndex: Int?, dayOfWeekCondition: DayOfWeekCondition) {
+        if let index = editingIndex {
+            // Mettre à jour une condition existante
+            updateDayOfWeekCondition(at: index, dayOfWeek: dayOfWeekCondition)
+        } else {
+            // Créer une nouvelle condition
+            let newCondition = DisplayCondition(
+                type: .dayOfWeek,
+                isActive: true,
+                dayOfWeekCondition: dayOfWeekCondition
+            )
+            addCondition(newCondition)
+        }
+        
+        closeConditionSheet()
+    }
+    
+    func saveTimeRangeCondition(editingIndex: Int?, timeRangeCondition: TimeRangeCondition) {
+        if let index = editingIndex {
+            updateTimeRangeCondition(at: index, timeRange: timeRangeCondition)
+        } else {
+            let newCondition = DisplayCondition(
+                type: .timeRange,
+                isActive: true,
+                timeRange: timeRangeCondition
+            )
+            addCondition(newCondition)
+        }
+        
+        // Fermer le sheet
+        closeConditionSheet()
+    }
+    
     // Vérifier si des données sont disponibles
     func checkDataAvailability() {
         if filteredLines.isEmpty && selectedTransportMode != nil && !isLoading {

@@ -79,6 +79,7 @@
 				Models/Imported/ImportedLine.swift,
 				Models/Imported/ImportedStop.swift,
 				Models/Operator.swift,
+				Models/StopAnnotation.swift,
 				Models/StopType.swift,
 				Models/TransportFavorite.swift,
 				Models/TransportLine.swift,
