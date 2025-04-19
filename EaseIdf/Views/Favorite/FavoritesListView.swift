@@ -133,8 +133,12 @@ struct FavoritesListView: View {
                             }
                             .tint(Color(.blue))
                         }
+                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
                     }
                 }
+                .listStyle(PlainListStyle())
                 .padding(.vertical)
                 .refreshable {
                     viewModel.updateActiveFavorites()
