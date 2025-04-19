@@ -48,6 +48,7 @@ struct SwipeActionsView<Content: View>: View {
                     Rectangle()
                         .frame(width: max(0.0, geometry.size.width - securityLeftSide), height: contentHeight > 0 ? contentHeight : geometry.size.height)
                         .foregroundColor(.blue)
+                        .opacity(offset == 0.0 ? 0.0 : 1.0)
                 }
                 
                 HStack(spacing: 0) {
@@ -56,6 +57,7 @@ struct SwipeActionsView<Content: View>: View {
                     Rectangle()
                         .frame(width: isSwipeComplete ? 0.0 : geometry.size.width - securityLeftSide, height: contentHeight > 0 ? contentHeight : geometry.size.height)
                         .foregroundColor(.red)
+                        .opacity(offset == 0.0 ? 0.0 : 1.0)
                         .overlay(
                             HStack(spacing: 0) {
                                 Spacer()
@@ -80,6 +82,7 @@ struct SwipeActionsView<Content: View>: View {
                     Rectangle()
                         .frame(width: isSwipeComplete ? specWidthEditFrame : normalWidthEditFrame, height: contentHeight > 0 ? contentHeight : geometry.size.height)
                         .foregroundColor(.blue)
+                        .opacity(offset == 0.0 ? 0.0 : 1.0)
                         .overlay(
                             HStack(spacing: 0) {
                                 Image(systemName: "pencil")
