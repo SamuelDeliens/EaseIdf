@@ -194,9 +194,12 @@ class FavoritesViewModel: ObservableObject {
             for: favorite.stopId,
             lineId: favorite.lineId
         )
+        
+        //TODO
+        let fakeDeparture = DepartureSimulationService.shared.generateSimulatedDepartures(for: favorite)
 
         // Sort by departure time
-        let sortedDepartures = favoriteDepartures.sorted {
+        let sortedDepartures = fakeDeparture.sorted {
             $0.expectedDepartureTime < $1.expectedDepartureTime
         }
         
