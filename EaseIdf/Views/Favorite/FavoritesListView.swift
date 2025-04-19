@@ -13,8 +13,9 @@ struct FavoritesListView: View {
     @ObservedObject var viewModel: FavoritesViewModel
     @Binding var showEditTransportList: Bool
     
+    @State private var showingDeleteAlert = false
     @State private var showEditTransport = false
-    @State private var selectedEditTransport = TransportFavorite(
+    @State private var selectedTransport = TransportFavorite(
         id: UUID(),
         stopId: "",
         lineId: nil,
@@ -68,7 +69,7 @@ struct FavoritesListView: View {
                 }
         }
         .sheet(isPresented: $showEditTransport) {
-            EditFavoriteView(favorite: $selectedEditTransport)
+            EditFavoriteView(favorite: $selectedTransport)
                 .onDisappear {
                     viewModel.loadFavorites()
                         Task {
@@ -100,45 +101,59 @@ struct FavoritesListView: View {
             if showEditTransportList {
                 editableList
             } else {
-                ScrollView {
-                    VStack(spacing: 16) {
-                        ForEach(viewModel.favorites) { favorite in
-                            let departures = viewModel.departures[favorite.id.uuidString] ?? []
-                            let isActive = viewModel.activeFavorites.contains(where: { $0.id == favorite.id })
+                List {
+                    ForEach(viewModel.favorites) { favorite in
+                        let departures = viewModel.departures[favorite.id.uuidString] ?? []
+                        let isActive = viewModel.activeFavorites.contains(where: { $0.id == favorite.id })
+                        
+                        // Utilisation de SwipeActionsView pour le swipe à deux niveaux
+                        ZStack(alignment: .topTrailing) {
+                            FavoriteCardView(favorite: favorite, departures: departures)
                             
-                            // Utilisation de SwipeActionsView pour le swipe à deux niveaux
-                            SwipeActionsView(
-                                favorite: favorite,
-                                deleteAction: {
-                                    // Action de suppression
-                                    withAnimation {
-                                        viewModel.removeFavorite(with: favorite.id)
-                                    }
-                                },
-                                editAction: {
-                                    viewModel.stopRefreshTimers()
-                                    selectedEditTransport = favorite
-                                    showEditTransport = true
-                                }
-                            ) {
-                                ZStack(alignment: .topTrailing) {
-                                    FavoriteCardView(favorite: favorite, departures: departures)
-                                    
-                                    // Badge pour indiquer si le favori est inactif
-                                    if !isActive {
-                                        inactiveBadge
-                                            .offset(x: 10, y: -10)
-                                    }
-                                }
+                            // Badge pour indiquer si le favori est inactif
+                            if !isActive {
+                                inactiveBadge
+                                    .offset(x: 10, y: -10)
                             }
-                            .padding(.horizontal)
+                        }
+                        .swipeActions {
+                            Button {
+                                showingDeleteAlert = true
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                            .tint(Color(.red))
+                            
+                            Button {
+                                viewModel.stopRefreshTimers()
+                                selectedTransport = favorite
+                                showEditTransport = true
+                            } label: {
+                                Label("Edit", systemImage: "pencil")
+                            }
+                            .tint(Color(.blue))
                         }
                     }
-                    .padding(.vertical)
                 }
+                .padding(.vertical)
                 .refreshable {
                     viewModel.updateActiveFavorites()
                     viewModel.refreshDepartures()
+                }
+                .alert(isPresented: $showingDeleteAlert) {
+                    Alert(
+                        title: Text("Supprimer ce favori ?"),
+                        message: Text("Êtes-vous sûr de vouloir supprimer \"\(selectedTransport.displayName)\" de vos favoris ?"),
+                        primaryButton: .destructive(Text("Supprimer")) {
+                            withAnimation {
+                                viewModel.removeFavorite(with: selectedTransport.id)
+                                showingDeleteAlert = false
+                            }
+                        },
+                        secondaryButton: .cancel(Text("Annuler")) {
+                            showingDeleteAlert = false
+                        }
+                    )
                 }
             }
         }
