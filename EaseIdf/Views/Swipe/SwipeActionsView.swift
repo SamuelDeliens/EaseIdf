@@ -20,6 +20,7 @@ struct SwipeActionsView<Content: View>: View {
     @State private var isSwipeComplete: Bool = false
     @State private var isSwipeHold: Bool = false
     @State private var showingDeleteAlert = false
+    @State private var contentHeight: CGFloat = 0
         
     private let swipeButtonWidth: CGFloat = 80
     private let securityLeftSide: CGFloat = 100
@@ -45,7 +46,7 @@ struct SwipeActionsView<Content: View>: View {
                     Spacer()
                     
                     Rectangle()
-                        .frame(width: max(0.0, geometry.size.width - securityLeftSide), height: geometry.size.height)
+                        .frame(width: max(0.0, geometry.size.width - securityLeftSide), height: contentHeight > 0 ? contentHeight : geometry.size.height)
                         .foregroundColor(.blue)
                 }
                 
@@ -53,7 +54,7 @@ struct SwipeActionsView<Content: View>: View {
                     Spacer()
                     
                     Rectangle()
-                        .frame(width: isSwipeComplete ? 0.0 : geometry.size.width - securityLeftSide, height: geometry.size.height)
+                        .frame(width: isSwipeComplete ? 0.0 : geometry.size.width - securityLeftSide, height: contentHeight > 0 ? contentHeight : geometry.size.height)
                         .foregroundColor(.red)
                         .overlay(
                             HStack(spacing: 0) {
@@ -77,7 +78,7 @@ struct SwipeActionsView<Content: View>: View {
                     Spacer()
                     
                     Rectangle()
-                        .frame(width: isSwipeComplete ? specWidthEditFrame : normalWidthEditFrame, height: geometry.size.height)
+                        .frame(width: isSwipeComplete ? specWidthEditFrame : normalWidthEditFrame, height: contentHeight > 0 ? contentHeight : geometry.size.height)
                         .foregroundColor(.blue)
                         .overlay(
                             HStack(spacing: 0) {
@@ -99,10 +100,20 @@ struct SwipeActionsView<Content: View>: View {
                 }
             }
             .cornerRadius(12)
-            .frame(height: geometry.size.height)
             
-            
+            // Utilisez un autre GeometryReader pour mesurer la hauteur du contenu
             content
+                .background(
+                    GeometryReader { contentGeometry in
+                        Color.clear
+                            .preference(key: ContentHeightPreferenceKey.self, value: contentGeometry.size.height)
+                            .onPreferenceChange(ContentHeightPreferenceKey.self) { newHeight in
+                                withAnimation {
+                                    contentHeight = newHeight
+                                }
+                            }
+                    }
+                )
                 .offset(x: offset)
                 .gesture(
                     DragGesture()
@@ -199,7 +210,16 @@ struct SwipeActionsView<Content: View>: View {
                         }
                     )
                 }
-            }
-        .frame(minHeight: 67)
+        }
+        .frame(height: contentHeight)
+    }
+}
+
+// Clé de préférence pour observer la hauteur du contenu
+struct ContentHeightPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }

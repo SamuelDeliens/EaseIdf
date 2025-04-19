@@ -132,7 +132,6 @@ struct FavoritesListView: View {
                                 }
                             }
                             .padding(.horizontal)
-                            .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                     .padding(.vertical)
