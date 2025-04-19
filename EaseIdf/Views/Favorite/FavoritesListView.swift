@@ -133,7 +133,7 @@ struct FavoritesListView: View {
                             }
                             .tint(Color(.blue))
                         }
-                        .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
+                        .listRowInsets(EdgeInsets(top: 7, leading: 14, bottom: 7, trailing: 14))
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                     }
