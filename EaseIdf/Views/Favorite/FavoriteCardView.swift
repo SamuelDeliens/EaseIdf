@@ -32,8 +32,8 @@ struct FavoriteCardView: View {
     @State private var isExpanded = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Header with line info
+        VStack(spacing: 0) {
+            // En-tête personnalisé
             HStack {
                 // Line badge/logo
                 if let shortName = lineShortName {
@@ -83,8 +83,17 @@ struct FavoriteCardView: View {
             .padding(.horizontal)
             .padding(.vertical, 12)
             .background(Color(.secondarySystemBackground))
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if departures.count > 1 {
+                    //TODO Check how to animate properly
+                    //withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        isExpanded.toggle()
+                    //}
+                }
+            }
             
-            // Additional departures if expanded
+            // Contenu déployable
             if isExpanded && departures.count > 1 {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(departures.dropFirst()) { departure in
@@ -101,21 +110,9 @@ struct FavoriteCardView: View {
                 }
             }
         }
+        .background(Color(.secondarySystemBackground))
         .cornerRadius(12)
         .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if departures.count > 1 {
-                withAnimation {
-                    isExpanded.toggle()
-                }
-            }
-        }
-        .onChange(of: isExpanded) { _ in
-            // Émet une notification pour forcer le recalcul des dimensions quand l'expansion change
-            NotificationCenter.default.post(name: Notification.Name("FavoriteCardExpandedStateChanged"), object: nil)
-        }
-        .id("\(favorite.id)-\(isExpanded)-\(departures.count)") // Force redraw when expanded state changes
     }
     
     // Couleur du temps d'attente basée sur les minutes restantes

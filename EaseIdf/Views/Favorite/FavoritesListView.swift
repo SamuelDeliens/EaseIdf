@@ -109,6 +109,7 @@ struct FavoritesListView: View {
                         // Utilisation de SwipeActionsView pour le swipe à deux niveaux
                         ZStack(alignment: .topTrailing) {
                             FavoriteCardView(favorite: favorite, departures: departures)
+                                .id("card-\(favorite.id)")
                             
                             // Badge pour indiquer si le favori est inactif
                             if !isActive {
