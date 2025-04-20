@@ -14,8 +14,12 @@ struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     
     // ViewModels
-    @StateObject private var authViewModel = AuthViewModel()
-    @StateObject private var favoritesViewModel = FavoritesViewModel()
+    @StateObject private var authViewModel = AuthViewModel(authService: AppServices.shared.authService)
+    @StateObject private var favoritesViewModel = FavoritesViewModel(
+        modelContext: nil, // Sera défini dans onAppear
+        favoriteService: AppServices.shared.favoriteService,
+        conditionService: AppServices.shared.conditionService
+    )
     
     // États UI
     @State private var showingSettings = false
@@ -66,11 +70,16 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
+                    .environment(\.modelContext, modelContext)
+                    .onDisappear {
+                        // On recharge les favoris car les paramètres ont pu changer
+                        favoritesViewModel.loadFavorites()
+                    }
             }
             .sheet(isPresented: $showingAddTransport) {
                 AddTransportView()
+                    .environment(\.modelContext, modelContext)
                     .onDisappear {
-                        // Rafraîchir les favoris lorsque la feuille est fermée
                         favoritesViewModel.loadFavorites()
                     }
             }
@@ -80,12 +89,18 @@ struct ContentView: View {
                 
                 // Configurer les ViewModels avec le contexte de modèle
                 if !initialLoadComplete {
+                    // S'assurer que le ModelContext est défini dans les services et ViewModels
                     favoritesViewModel.setModelContext(modelContext)
+                    AppServices.shared.favoriteService.setModelContext(modelContext)
                     
                     // Vérifier si les données de base sont chargées
                     validateBaseDataLoaded()
                     
                     initialLoadComplete = true
+                    
+                    // Charger les favoris
+                    favoritesViewModel.loadFavorites()
+                    print("🔄 Chargement initial des favoris")
                 }
             }
         }

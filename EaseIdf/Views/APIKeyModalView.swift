@@ -11,8 +11,10 @@ import SwiftUI
 struct APIKeyModalView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    
     @ObservedObject var viewModel: AuthViewModel
     @Binding var show: Bool
+    
     @State private var keyInputField: String = ""
     @FocusState private var isInputFieldFocused: Bool
     
@@ -139,14 +141,5 @@ struct APIKeyModalView: View {
                 isInputFieldFocused = true
             }
         }
-    }
-}
-
-struct APIKeyModalView_Previews: PreviewProvider {
-    @State static var showModal = true
-    
-    static var previews: some View {
-        APIKeyModalView(viewModel: AuthViewModel(), show: $showModal)
-            .preferredColorScheme(.light)
     }
 }

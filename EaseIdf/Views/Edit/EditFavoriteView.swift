@@ -13,12 +13,16 @@ struct EditFavoriteView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     
-    @ObservedObject var viewModel: EditFavoriteViewModel
-    let selectedEditTransport: Binding<TransportFavorite>
+    @StateObject var viewModel: EditFavoriteViewModel
+    let selectedFavorite: Binding<TransportFavorite>
     
     init(favorite: Binding<TransportFavorite>) {
-        self._viewModel = ObservedObject(wrappedValue: EditFavoriteViewModel(favorite: favorite))
-        self.selectedEditTransport = favorite
+        self._viewModel = StateObject(wrappedValue: EditFavoriteViewModel(
+            favorite: favorite,
+            favoriteService: AppServices.shared.favoriteService,
+            conditionService: AppServices.shared.conditionService
+        ))
+        self.selectedFavorite = favorite
     }
     
     var body: some View {
@@ -112,7 +116,11 @@ struct EditFavoriteView: View {
                 conditionSheetView
             }
             .alert("Favori modifié", isPresented: $viewModel.showingSavedAlert) {
-                Button("OK") { dismiss() }
+                Button("OK") {
+                    // Notifier que les favoris ont changé
+                    NotificationCenter.default.post(name: NSNotification.Name("FavoritesChanged"), object: nil)
+                    dismiss()
+                }
             } message: {
                 Text("Les modifications ont été enregistrées avec succès.")
             }
@@ -175,23 +183,23 @@ struct EditFavoriteView: View {
         }()
         
         return AnyView(
-                NavigationStack {
-                    DayOfWeekConditionView(
-                        editingIndex: viewModel.editingConditionIndex,
-                        saveDayOfWeekCondition: viewModel.saveDayOfWeekConditionEdit,
-                        initialDays: dayOfWeek?.days ?? []
-                    )
-                    .navigationTitle("Configuration des jours")
-                    .navigationBarTitleDisplayMode(.inline)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("Retour") {
-                                viewModel.closeConditionSheet()
-                            }
+            NavigationStack {
+                DayOfWeekConditionView(
+                    editingIndex: viewModel.editingConditionIndex,
+                    saveDayOfWeekCondition: viewModel.saveDayOfWeekConditionEdit,
+                    initialDays: dayOfWeek?.days ?? []
+                )
+                .navigationTitle("Configuration des jours")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Retour") {
+                            viewModel.closeConditionSheet()
                         }
                     }
                 }
-            )
+            }
+        )
     }
     
     private var locationSheet: some View {

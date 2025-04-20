@@ -63,8 +63,9 @@ struct AddTransportView: View {
                 }
             }
             .onAppear {
-                // Passer le contexte de modèle au ViewModel
+                // Passer le contexte de modèle au ViewModel et au FavoriteService
                 viewModel.setModelContext(modelContext)
+                AppServices.shared.favoriteService.setModelContext(modelContext)
                 
                 // Vérifier si des données sont disponibles
                 viewModel.checkDataAvailability()

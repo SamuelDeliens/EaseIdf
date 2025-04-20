@@ -54,6 +54,10 @@ struct ConditionOptionsView: View {
                 
                 Button {
                     viewModel.saveFavorite()
+                    
+                    // Notifier que les favoris ont changé
+                    NotificationCenter.default.post(name: NSNotification.Name("FavoritesChanged"), object: nil)
+                    
                     dismiss()
                 } label: {
                     HStack {
@@ -78,8 +82,4 @@ struct ConditionOptionsView: View {
         }
         .padding()
     }
-}
-
-#Preview {
-    ConditionOptionsView(viewModel: AddTransportViewModel())
 }

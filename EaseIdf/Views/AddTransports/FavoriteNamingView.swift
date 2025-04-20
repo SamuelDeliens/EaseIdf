@@ -5,6 +5,7 @@
 //  Created by Samuel DELIENS on 14/04/2025.
 //
 
+
 import SwiftUI
 
 struct FavoriteNamingView: View {
@@ -101,6 +102,3 @@ struct FavoriteNamingView: View {
     }
 }
 
-#Preview {
-    FavoriteNamingView(viewModel: AddTransportViewModel())
-}

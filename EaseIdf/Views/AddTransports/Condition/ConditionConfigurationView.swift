@@ -62,7 +62,6 @@ struct ConditionConfigurationView: View {
             return AnyView(EmptyView())
         }
     }
-
     
     private var timeRangeSheet: some View {
         let timeRange: TimeRangeCondition? = {
@@ -75,7 +74,7 @@ struct ConditionConfigurationView: View {
         }()
         
         return AnyView(
-                NavigationStack {
+            NavigationStack {
                 TimeRangeConditionView(
                     editingIndex: viewModel.editingConditionIndex,
                     saveTimeRangeCondition: viewModel.saveTimeRangeCondition,
@@ -94,7 +93,7 @@ struct ConditionConfigurationView: View {
             }
         )
     }
-
+    
     private var dayOfWeekSheet: some View {
         let dayOfWeek: DayOfWeekCondition? = {
             if let index = viewModel.editingConditionIndex,
@@ -124,7 +123,7 @@ struct ConditionConfigurationView: View {
             }
         )
     }
-
+    
     private var locationSheet: some View {
         AnyView(
             NavigationStack {
@@ -144,7 +143,6 @@ struct ConditionConfigurationView: View {
             }
         )
     }
-
     
     private var favoriteRecapSection: some View {
         VStack(spacing: 8) {
@@ -273,6 +271,10 @@ struct ConditionConfigurationView: View {
     private var saveButton: some View {
         Button {
             viewModel.saveConditions()
+            
+            // Notifier que les favoris ont changé
+            NotificationCenter.default.post(name: NSNotification.Name("FavoritesChanged"), object: nil)
+            
             dismiss()
         } label: {
             if viewModel.isSaving {
@@ -393,47 +395,7 @@ struct AddConditionRow: View {
     
     // Détails de la condition
     private var conditionDetails: String {
-        switch condition.type {
-        case .timeRange:
-            guard let timeRange = condition.timeRange else {
-                return "Horaire non configuré"
-            }
-            
-            let formatter = DateFormatter()
-            formatter.timeStyle = .short
-            
-            let startTime = formatter.string(from: timeRange.startTime)
-            let endTime = formatter.string(from: timeRange.endTime)
-            
-            return "Entre \(startTime) et \(endTime)"
-            
-        case .dayOfWeek:
-            guard let dayCondition = condition.dayOfWeekCondition, !dayCondition.days.isEmpty else {
-                return "Jours non configurés"
-            }
-            
-            let dayNames = dayCondition.days.map { getDayName($0) }.joined(separator: ", ")
-            return "Les jours suivants : \(dayNames)"
-            
-        case .location:
-            guard let locationCondition = condition.locationCondition else {
-                return "Position non configurée"
-            }
-            
-            return "Dans un rayon de \(Int(locationCondition.radius))m autour de la position définie"
-        }
-    }
-    
-    // Nom du jour de la semaine
-    private func getDayName(_ day: Weekday) -> String {
-        switch day {
-        case .monday: return "Lundi"
-        case .tuesday: return "Mardi"
-        case .wednesday: return "Mercredi"
-        case .thursday: return "Jeudi"
-        case .friday: return "Vendredi"
-        case .saturday: return "Samedi"
-        case .sunday: return "Dimanche"
-        }
+        let conditionService = AppServices.shared.conditionService
+        return conditionService.getConditionDescription(condition)
     }
 }

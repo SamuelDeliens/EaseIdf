@@ -5,13 +5,18 @@
 //  Created by Samuel DELIENS on 14/04/2025.
 //
 
+
 import SwiftUI
 import SwiftData
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @StateObject private var viewModel = SettingsViewModel()
+    
+    @StateObject private var viewModel = SettingsViewModel(
+        authService: AppServices.shared.authService,
+        favoritesViewModel: FavoritesViewModel.shared
+    )
     
     @State private var showingKeychainDebug = false
     
@@ -52,11 +57,12 @@ struct SettingsView: View {
                     Button("Diagnostiquer la localisation") {
                         let debugInfo = LocationDebugService.shared.debugLocationStatus()
                         print(debugInfo)
-                        // Vous pourriez afficher une alerte avec ces informations
+                        viewModel.showAlert(message: "Informations de débogage de la localisation envoyées à la console")
                     }
                     
                     Button("Corriger les conditions de localisation") {
                         LocationDebugService.shared.fixLocationConditions()
+                        viewModel.showAlert(message: "Correction des conditions de localisation terminée")
                     }
                     
                     Button("Débogage Keychain") {
@@ -85,7 +91,7 @@ struct SettingsView: View {
                         HStack {
                             Image(systemName: viewModel.isRefreshPaused ? "pause.circle.fill" : "play.circle.fill")
                                 .foregroundColor(viewModel.isRefreshPaused ? .orange : .green)
-                            Text(viewModel.isRefreshPaused ? "Paused" : "Running")
+                            Text(viewModel.isRefreshPaused ? "Actualisations en pause" : "Actualisations actives")
                                 .foregroundColor(viewModel.isRefreshPaused ? .orange : .green)
                         }
                     }
@@ -94,6 +100,7 @@ struct SettingsView: View {
                 Section {
                     Button("Effacer le cache") {
                         viewModel.clearCache()
+                        viewModel.showAlert(message: "Cache effacé avec succès")
                     }
                     .foregroundColor(.red)
                 }
@@ -113,21 +120,19 @@ struct SettingsView: View {
                 }
             }
             .onAppear {
-                // Set the model context after the view has appeared
+                // Définir le ModelContext
+                viewModel.setModelContext(modelContext)
                 viewModel.loadSettings()
-                print(viewModel.refreshInterval)
             }
             .alert("Paramètres sauvegardés", isPresented: $viewModel.showSavedAlert) {
                 Button("OK") { dismiss() }
             }
+            .alert(viewModel.alertMessage, isPresented: $viewModel.showAlert) {
+                Button("OK", role: .cancel) { }
+            }
             .sheet(isPresented: $showingKeychainDebug) {
                 KeychainDebugView()
             }
-        }
-        .onAppear {
-            // Pass the model context to the view model after view appears
-            viewModel.setModelContext(modelContext)
-            viewModel.loadSettings()
         }
     }
 }

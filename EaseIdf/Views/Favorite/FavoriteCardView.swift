@@ -86,10 +86,9 @@ struct FavoriteCardView: View {
             .contentShape(Rectangle())
             .onTapGesture {
                 if departures.count > 1 {
-                    //TODO Check how to animate properly
-                    //withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                         isExpanded.toggle()
-                    //}
+                    }
                 }
             }
             
