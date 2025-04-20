@@ -120,6 +120,7 @@ class FavoriteService {
         guard let modelContext = modelContext else {
             // Fallback vers StorageService
             StorageService.shared.saveFavorite(favorite)
+            NotificationCenter.default.post(name: NSNotification.Name("FavoritesChanged"), object: nil)
             return
         }
         
@@ -154,7 +155,6 @@ class FavoriteService {
                     DisplayConditionModel.fromStruct($0)
                 }
             } else {
-                // Créer un nouveau favori
                 let newFavorite = TransportFavoriteModel.fromStruct(favorite)
                 modelContext.insert(newFavorite)
             }
@@ -171,6 +171,8 @@ class FavoriteService {
             Task {
                 await WidgetService.shared.refreshWidgetData()
             }
+            
+            NotificationCenter.default.post(name: NSNotification.Name("FavoritesChanged"), object: nil)
         } catch {
             print("Erreur lors de la sauvegarde du favori: \(error)")
             
@@ -179,6 +181,8 @@ class FavoriteService {
             
             // Recharger les favoris après la sauvegarde
             loadFavorites()
+            
+            NotificationCenter.default.post(name: NSNotification.Name("FavoritesChanged"), object: nil)
         }
     }
     
