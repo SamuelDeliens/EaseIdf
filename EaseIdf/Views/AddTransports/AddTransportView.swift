@@ -5,14 +5,20 @@
 //  Created by Samuel DELIENS on 14/04/2025.
 //
 
+
 import SwiftUI
 import SwiftData
-
 
 struct AddTransportView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @StateObject private var viewModel = AddTransportViewModel()
+    
+    // Utiliser le service partagé d'AppServices
+    @StateObject private var viewModel = AddTransportViewModel(
+        transportService: AppServices.shared.transportService,
+        favoriteService: AppServices.shared.favoriteService,
+        conditionService: AppServices.shared.conditionService
+    )
     
     var body: some View {
         NavigationStack {
@@ -73,6 +79,8 @@ struct AddTransportView: View {
             }
             .alert("Transport ajouté", isPresented: $viewModel.favoriteCreated) {
                 Button("OK") {
+                    // Notification pour informer que les favoris ont changé
+                    NotificationCenter.default.post(name: NSNotification.Name("FavoritesChanged"), object: nil)
                     dismiss()
                 }
             } message: {
@@ -121,9 +129,4 @@ struct AddTransportView: View {
             }
         }
     }
-}
-
-#Preview {
-    AddTransportView()
-        .modelContainer(PersistenceService.shared.getModelContainer())
 }

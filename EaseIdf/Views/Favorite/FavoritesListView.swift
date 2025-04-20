@@ -10,29 +10,22 @@ import SwiftUI
 import SwiftData
 
 struct FavoritesListView: View {
+    // ViewModel
     @ObservedObject var viewModel: FavoritesViewModel
-    @Binding var showEditTransportList: Bool
     
+    // États UI
+    @Binding var showEditTransportList: Bool
     @State private var showingDeleteAlert = false
     @State private var showEditTransport = false
-    @State private var selectedTransport = TransportFavorite(
-        id: UUID(),
-        stopId: "",
-        lineId: nil,
-        displayName: "",
-        displayConditions: [],
-        priority: 0
-    )
-    
     @State private var showingAddTransport = false
-        
+    
     var body: some View {
         VStack {
             // Affichage du temps écoulé depuis la dernière mise à jour des données
             if !viewModel.favorites.isEmpty {
                 HStack {
                     Spacer()
-                    Text("Dernière mise à jour : \(timeSinceLastRefresh)")
+                    Text("Dernière mise à jour : \(viewModel.getTimeSinceLastRefresh())")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .padding(.horizontal)
@@ -53,13 +46,20 @@ struct FavoritesListView: View {
             }
         )
         .onAppear {
-            viewModel.updateActiveFavorites()
+            // Charger les favoris et leurs conditions
+            viewModel.loadFavorites()
+            
+            // Rafraîchir les données de départs
             viewModel.refreshDepartures()
         }
         .onReceive(NotificationCenter.default.publisher(for: Notification.Name("SettingsChanged"))) { _ in
             // Réinitialiser les timers lorsque les paramètres sont modifiés
             viewModel.stopRefreshTimers()
             viewModel.loadFavorites() // Cela réinitialisera les timers avec les nouveaux paramètres
+        }
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("FavoritesChanged"))) { _ in
+            // Recharger les favoris quand ils sont modifiés (ajout/suppression/modification)
+            viewModel.loadFavorites()
         }
         .sheet(isPresented: $showingAddTransport) {
             AddTransportView()
@@ -69,29 +69,33 @@ struct FavoritesListView: View {
                 }
         }
         .sheet(isPresented: $showEditTransport) {
-            EditFavoriteView(favorite: $selectedTransport)
+            if let favorite = viewModel.selectedFavorite {
+                EditFavoriteView(favorite: Binding(
+                    get: { favorite },
+                    set: { newValue in
+                        // Cette implémentation sera appelée lorsque le favori est modifié
+                        viewModel.loadFavorites()
+                    }
+                ))
                 .onDisappear {
                     viewModel.loadFavorites()
-                        Task {
-                            await WidgetService.shared.refreshWidgetData()
-                        }
+                    Task {
+                        await WidgetService.shared.refreshWidgetData()
+                    }
                 }
+            }
         }
-    }
-    
-    private var timeSinceLastRefresh: String {
-        let interval = Date().timeIntervalSince(viewModel.lastDataRefresh)
-        
-        if interval < 60 {
-            return "à l'instant"
-        } else if interval < 120 {
-            return "il y a 1 minute"
-        } else if interval < 3600 {
-            return "il y a \(Int(interval / 60)) minutes"
-        } else if interval < 7200 {
-            return "il y a 1 heure"
-        } else {
-            return "il y a \(Int(interval / 3600)) heures"
+        .alert(isPresented: $viewModel.showingDeleteAlert) {
+            Alert(
+                title: Text("Supprimer ce favori ?"),
+                message: Text("Êtes-vous sûr de vouloir supprimer \"\(viewModel.selectedFavorite?.displayName ?? "")\" de vos favoris ?"),
+                primaryButton: .destructive(Text("Supprimer")) {
+                    withAnimation {
+                        viewModel.confirmDeleteFavorite()
+                    }
+                },
+                secondaryButton: .cancel()
+            )
         }
     }
     
@@ -103,8 +107,8 @@ struct FavoritesListView: View {
             } else {
                 List {
                     ForEach(viewModel.favorites) { favorite in
-                        let departures = viewModel.departures[favorite.id.uuidString] ?? []
-                        let isActive = viewModel.activeFavorites.contains(where: { $0.id == favorite.id })
+                        let departures = viewModel.getDepartures(for: favorite)
+                        let isActive = viewModel.isFavoriteActive(favorite)
                         
                         // Utilisation de SwipeActionsView pour le swipe à deux niveaux
                         ZStack(alignment: .topTrailing) {
@@ -119,15 +123,14 @@ struct FavoritesListView: View {
                         }
                         .swipeActions {
                             Button {
-                                showingDeleteAlert = true
+                                viewModel.prepareDeleteFavorite(favorite)
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }
                             .tint(Color(.red))
                             
                             Button {
-                                viewModel.stopRefreshTimers()
-                                selectedTransport = favorite
+                                viewModel.editFavorite(favorite)
                                 showEditTransport = true
                             } label: {
                                 Label("Edit", systemImage: "pencil")
@@ -142,23 +145,10 @@ struct FavoritesListView: View {
                 .listStyle(PlainListStyle())
                 .padding(.vertical)
                 .refreshable {
-                    viewModel.updateActiveFavorites()
+                    // Simplement recharger les favoris, ce qui mettra également à jour les actifs
+                    viewModel.loadFavorites()
+                    // Puis rafraîchir les départs
                     viewModel.refreshDepartures()
-                }
-                .alert(isPresented: $showingDeleteAlert) {
-                    Alert(
-                        title: Text("Supprimer ce favori ?"),
-                        message: Text("Êtes-vous sûr de vouloir supprimer \"\(selectedTransport.displayName)\" de vos favoris ?"),
-                        primaryButton: .destructive(Text("Supprimer")) {
-                            withAnimation {
-                                viewModel.removeFavorite(with: selectedTransport.id)
-                                showingDeleteAlert = false
-                            }
-                        },
-                        secondaryButton: .cancel(Text("Annuler")) {
-                            showingDeleteAlert = false
-                        }
-                    )
                 }
             }
         }
@@ -187,14 +177,21 @@ struct FavoritesListView: View {
                     
                     Spacer()
                     
-                    if !viewModel.activeFavorites.contains(where: { $0.id == favorite.id }) {
+                    if !viewModel.isFavoriteActive(favorite) {
                         Image(systemName: "moon.fill")
                             .foregroundColor(.secondary)
                     }
                 }
             }
             .onDelete { indexSet in
-                viewModel.removeFavorite(at: indexSet)
+                // Créer un tableau temporaire des favoris à supprimer
+                let favoritesToDelete = indexSet.map { viewModel.favorites[$0] }
+                
+                // Supprimer chaque favori
+                for favorite in favoritesToDelete {
+                    viewModel.prepareDeleteFavorite(favorite)
+                    viewModel.confirmDeleteFavorite()
+                }
             }
             .onMove { source, destination in
                 viewModel.moveFavorite(from: source, to: destination)
