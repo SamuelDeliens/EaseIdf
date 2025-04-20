@@ -5,27 +5,45 @@
 //  Created by Samuel DELIENS on 14/04/2025.
 //
 
+
 import Foundation
 import Combine
 
-class AuthViewModel: ObservableObject {
+/// ViewModel pour la gestion de l'authentification
+class AuthViewModel: BaseViewModel {
+    // MARK: - État de l'authentification
+    
     @Published var isAuthenticated = false
     @Published var isValidating = false
     @Published var showError = false
     @Published var apiKey: String = ""
     
-    private var cancellables = Set<AnyCancellable>()
+    // MARK: - Service d'authentification
     
-    init() {
-        isAuthenticated = AuthenticationService.shared.isAuthenticated()
+    private let authService: AuthenticationService
+    
+    // MARK: - Initialisation
+    
+    init(authService: AuthenticationService = AuthenticationService.shared) {
+        self.authService = authService
         
-        // Load stored API key if available
-        if let key = AuthenticationService.shared.getApiKey() {
+        super.init()
+        
+        // Vérifier l'état d'authentification initial
+        isAuthenticated = authService.isAuthenticated()
+        
+        // Charger la clé API stockée si disponible
+        if let key = authService.getApiKey() {
             apiKey = key
         }
         
-        // Subscribe to auth status changes
-        AuthenticationService.shared.$authStatus
+        // S'abonner aux changements de statut d'authentification
+        subscribeToAuthChanges()
+    }
+    
+    /// S'abonner aux changements de statut d'authentification
+    private func subscribeToAuthChanges() {
+        authService.$authStatus
             .sink { [weak self] status in
                 DispatchQueue.main.async {
                     self?.isAuthenticated = status == .authenticated
@@ -36,13 +54,16 @@ class AuthViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
+    // MARK: - Actions d'authentification
+    
+    /// Valider la clé API
     func validateApiKey() async {
         DispatchQueue.main.async {
             self.isValidating = true
             self.showError = false
         }
         
-        let isValid = await AuthenticationService.shared.saveAndValidateApiKey(apiKey)
+        let isValid = await authService.saveAndValidateApiKey(apiKey)
         
         DispatchQueue.main.async {
             self.isValidating = false
@@ -51,8 +72,9 @@ class AuthViewModel: ObservableObject {
         }
     }
     
+    /// Déconnexion
     func signOut() {
-        AuthenticationService.shared.signOut()
+        authService.signOut()
         isAuthenticated = false
         apiKey = ""
     }

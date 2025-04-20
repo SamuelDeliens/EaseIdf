@@ -5,23 +5,31 @@
 //  Created by Samuel DELIENS on 14/04/2025.
 //
 
-    
+
 import SwiftUI
 import SwiftData
 import Combine
 
 @main
 struct EaseIdfApp: App {
-    var sharedModelContainer: ModelContainer = PersistenceService.shared.getModelContainer()
-    var transportDataContainer: ModelContainer = DataPersistenceService.shared.getTransportDataContainer()
+    // Conteneurs de modèles
+    var sharedModelContainer: ModelContainer
     
+    // État de l'application
     @State private var needsDataLoading: Bool = false
-    private var shouldLoadData: Bool = false
-    
     @State private var cancellables = Set<AnyCancellable>()
     
+    // Initialisation
     init() {
-        self.shouldLoadData = checkIfDataLoadingNeeded()
+        // Initialiser le conteneur de modèle pour les données utilisateur
+        let userContainer = PersistenceService.shared.getModelContainer()
+        self.sharedModelContainer = userContainer
+        
+        // Configurer les services avec le conteneur
+        AppServices.shared.setModelContainer(userContainer)
+        
+        // Vérifier si le chargement des données est nécessaire
+        self.needsDataLoading = checkIfDataLoadingNeeded()
     }
     
     var body: some Scene {
@@ -38,9 +46,12 @@ struct EaseIdfApp: App {
                         .modelContainer(sharedModelContainer)
                         .onAppear {
                             Task {
-                                LocationService.shared.requestAuthorization()
-                                LocationService.shared.startLocationUpdates()
-                                await WidgetService.shared.refreshWidgetData()
+                                // Demander les autorisations de localisation au démarrage
+                                AppServices.shared.locationService.requestAuthorization()
+                                AppServices.shared.locationService.startLocationUpdates()
+                                
+                                // Rafraîchir les données du widget
+                                await AppServices.shared.widgetService.refreshWidgetData()
                             }
                         }
                 }
@@ -51,20 +62,24 @@ struct EaseIdfApp: App {
         }
     }
     
+    // Propriété calculée pour déterminer si les données doivent être chargées
+    private var shouldLoadData: Bool {
+        return checkIfDataLoadingNeeded()
+    }
+    
+    // Vérifier si le chargement des données est nécessaire
     private func checkIfDataLoadingNeeded() -> Bool {
-        LineDataService.shared.initializeModelContainer()
-        StopDataService.shared.initializeModelContainer()
+        let transportService = AppServices.shared.transportService
         
-        let linesEmpty = LineDataService.shared.getAllLines().isEmpty
-        let stopsEmpty = StopDataService.shared.getAllStops().isEmpty
+        let linesEmpty = transportService.getAllLines().isEmpty
+        let stopsEmpty = transportService.getAllStops().isEmpty
         
         print("Vérification des données: lignes vides = \(linesEmpty), arrêts vides = \(stopsEmpty)")
         
         return linesEmpty || stopsEmpty
     }
     
-    
-    // Dans EaseIdfApp.swift
+    // Charger les données de transport si nécessaire
     private func loadTransportDataIfNeeded(_ progressCallback: @escaping (Double) -> Void) async {
         // Démarrer les tâches en parallèle
         let totalSteps = 5
@@ -82,72 +97,48 @@ struct EaseIdfApp: App {
             progressCallback(progress)
         }
         
-        // Étape 1: Initialisation des conteneurs
+        // Étape 1: Initialisation des services
+        print("🔄 Initialisation des services...")
+        updateProgress()
+        
+        // Étape 2-3: Charger les données de transport
         Task {
-            print("🔄 Initialisation des conteneurs de modèles...")
-            LineDataService.shared.initializeModelContainer()
-            StopDataService.shared.initializeModelContainer()
-            
-            updateProgress()
-            
-            // Étape 2: Démarrer le chargement des lignes en arrière-plan
-            if LineDataService.shared.getAllLines().isEmpty {
-                print("📊 Démarrage du chargement des données de lignes...")
-                LineDataService.shared.loadLinesFromFile(named: "transport_lines")
-                
-                // Observer l'état de chargement plutôt que d'attendre
-                LineDataService.shared.$isLoading
-                    .sink { isLoading in
-                        if !isLoading {
-                            print("✅ Données de lignes chargées")
-                            updateProgress()
-                        }
-                    }
-                    .store(in: &cancellables)
+            let success = await AppServices.shared.initializeBaseData()
+            if success {
+                print("✅ Données de transport chargées avec succès")
             } else {
-                print("✅ Données de lignes déjà chargées")
-                updateProgress()
+                print("⚠️ Problèmes lors du chargement des données de transport")
             }
             
-            // Étape 3: Démarrer le chargement des arrêts en arrière-plan
-            if StopDataService.shared.getAllStops().isEmpty {
-                print("📍 Démarrage du chargement des données d'arrêts...")
-                StopDataService.shared.loadStopsFromFile(named: "transport_stops")
-                
-                StopDataService.shared.$isLoading
-                    .sink { isLoading in
-                        if !isLoading {
-                            print("✅ Données d'arrêts chargées")
-                            updateProgress()
-                        }
-                    }
-                    .store(in: &cancellables)
-            } else {
-                print("✅ Données d'arrêts déjà chargées")
-                updateProgress()
-            }
+            // On compte deux étapes pour le chargement (lignes et arrêts)
+            updateProgress() // Étape 2
+            updateProgress() // Étape 3
             
-            // Étapes 4 et 5: Configuration des services et widgets
-            LocationService.shared.requestAuthorization()
-            LocationService.shared.startLocationUpdates()
+            // Étape 4: Configuration des services de localisation
+            AppServices.shared.locationService.requestAuthorization()
+            AppServices.shared.locationService.startLocationUpdates()
             updateProgress()
             
-            // Widget refresh
+            // Étape 5: Configuration des widgets
             let settings = StorageService.shared.getUserSettings()
             
             if settings.isRefreshPaused {
-                WidgetService.shared.stopBackgroundUpdate()
+                AppServices.shared.widgetService.stopBackgroundUpdate()
             } else {
-                WidgetService.shared.scheduleBackgroundUpdates(interval: settings.refreshInterval)
+                AppServices.shared.widgetService.scheduleBackgroundUpdates(interval: settings.refreshInterval)
             }
-            await WidgetService.shared.refreshWidgetData()
+            await AppServices.shared.widgetService.refreshWidgetData()
             updateProgress()
         }
     }
 }
 
-// Erreurs spécifiques pour le chargement des données
-enum LoadingError: Error {
-    case dataNotLoaded(String)
-    case timeout
+// Environnement d'application pour les configurations globales
+struct AppEnvironment {
+    // Constantes et configurations globales
+    static var useSimulatedData: Bool = false
+    static var isDevelopmentMode: Bool = false
+    
+    // Paramètres de débogage
+    static var enableDetailedLogging: Bool = true
 }

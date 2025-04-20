@@ -5,41 +5,47 @@
 //  Created by Samuel DELIENS on 14/04/2025.
 //
 
+
 import Foundation
 import SwiftUI
 import Combine
 import SwiftData
 
-class AddTransportViewModel: ObservableObject {
-    // États de sélection
+class AddTransportViewModel: BaseViewModel {
+    // MARK: - Services
+    
+    private let transportService: TransportService
+    private let favoriteService: FavoriteService
+    private let conditionService: ConditionService
+    
+    // MARK: - États de sélection
+    
     @Published var selectedTransportMode: TransportMode?
     @Published var selectedLine: ImportedLine?
     @Published var selectedStop: ImportedStop?
     @Published var selectedDirection: LineDirection?
     @Published var displayName: String = ""
     
-    // États d'interface utilisateur
+    // MARK: - États d'interface utilisateur
+    
     @Published var searchLineQuery: String = ""
     @Published var searchStopQuery: String = ""
-    @Published var showingStopSelection = false
-    @Published var showingDirectionSelection = false
-    @Published var showingNameInput = false
     @Published var isSaving = false
     @Published var favoriteCreated = false
     
-    // Données filtrées
+    // MARK: - Données filtrées
+    
     @Published var filteredLines: [ImportedLine] = []
     @Published var filteredStops: [ImportedStop] = []
     @Published var availableDirections: [LineDirection] = []
     
-    // Propriétés pour les conditions d'affichage
+    // MARK: - Propriétés pour les conditions d'affichage
+    
     @Published var displayConditions: [DisplayCondition] = []
-    @Published var showingTimeRangeSheet = false
-    @Published var showingDayOfWeekSheet = false
-    @Published var showingLocationSheet = false
     @Published var editingConditionIndex: Int? = nil
     
-    // Gestion de l'étape active dans le flux d'ajout
+    // MARK: - Gestion de l'étape active dans le flux d'ajout
+    
     enum AddTransportStep {
         case selectTransportMode
         case selectLine
@@ -59,19 +65,31 @@ class AddTransportViewModel: ObservableObject {
         case dayOfWeek
         case location
     }
-        
-    @Published var currentStep: AddTransportStep = .selectTransportMode
     
+    @Published var currentStep: AddTransportStep = .selectTransportMode
     @Published var afterNamingStep: AddTransportStepAfterNaming = .saveWithoutConditions
     @Published var activeConditionSheet: ConditionSheetType = .none
     
-    private var cancellables = Set<AnyCancellable>()
-    var modelContext: ModelContext?
+    // MARK: - Initialisation
     
-    init(modelContext: ModelContext? = nil) {
-        self.modelContext = modelContext
+    init(
+        modelContext: ModelContext? = nil,
+        transportService: TransportService = TransportService(),
+        favoriteService: FavoriteService = FavoriteService(),
+        conditionService: ConditionService = ConditionService()
+    ) {
+        self.transportService = transportService
+        self.favoriteService = favoriteService
+        self.conditionService = conditionService
+        
+        super.init(modelContext: modelContext)
         
         // Observer les changements de recherche pour filtrer les lignes
+        setupSubscriptions()
+    }
+    
+    private func setupSubscriptions() {
+        // Filtrer les lignes lors des changements de requête
         $searchLineQuery
             .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
             .removeDuplicates()
@@ -80,7 +98,7 @@ class AddTransportViewModel: ObservableObject {
             }
             .store(in: &cancellables)
         
-        // Observer les changements de recherche pour filtrer les arrêts
+        // Filtrer les arrêts lors des changements de requête
         $searchStopQuery
             .debounce(for: .milliseconds(300), scheduler: RunLoop.main)
             .removeDuplicates()
@@ -90,12 +108,9 @@ class AddTransportViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-    // Mise à jour du ModelContext si nécessaire
-    func setModelContext(_ context: ModelContext?) {
-        self.modelContext = context
-    }
+    // MARK: - Méthodes de filtrage
     
-    // Filtrer les lignes en fonction du mode de transport et de la requête
+    /// Filtrer les lignes en fonction du mode de transport et de la requête
     func filterLines(query: String) {
         if isLoading {
             return
@@ -105,20 +120,20 @@ class AddTransportViewModel: ObservableObject {
             guard let self = self, !self.isLoading else { return }
             
             if let mode = self.selectedTransportMode {
-                self.filteredLines = LineDataService.shared.searchLines(query: query, mode: mode)
+                self.filteredLines = self.transportService.searchLines(query: query, mode: mode)
             } else {
-                self.filteredLines = LineDataService.shared.searchLines(query: query)
+                self.filteredLines = self.transportService.searchLines(query: query)
             }
         }
     }
     
-    // Filtrer les arrêts pour la ligne sélectionnée
+    /// Filtrer les arrêts pour la ligne sélectionnée
     func filterStops(query: String) {
         // Exécuter sur le thread principal car les opérations SwiftData doivent y rester
         DispatchQueue.main.async { [weak self] in
             guard let self = self, let line = self.selectedLine, !self.isLoading else { return }
             
-            let stopsForLine = StopDataService.shared.getStopsForLine(lineId: line.id_line)
+            let stopsForLine = self.transportService.getStopsForLine(lineId: line.id_line)
             
             if query.isEmpty {
                 self.filteredStops = stopsForLine
@@ -131,7 +146,9 @@ class AddTransportViewModel: ObservableObject {
         }
     }
     
-    // Sélectionner un mode de transport
+    // MARK: - Méthodes de sélection
+    
+    /// Sélectionner un mode de transport
     func selectTransportMode(_ mode: TransportMode) {
         self.selectedTransportMode = mode
         self.searchLineQuery = ""
@@ -139,26 +156,24 @@ class AddTransportViewModel: ObservableObject {
         self.currentStep = .selectLine
     }
     
-    // Sélectionner une ligne
+    /// Sélectionner une ligne
     func selectLine(_ line: ImportedLine) {
         self.selectedLine = line
         self.searchStopQuery = ""
         
         // Récupérer les arrêts pour cette ligne
-        let stopsForLine = StopDataService.shared.getStopsForLine(lineId: line.id_line)
+        let stopsForLine = transportService.getStopsForLine(lineId: line.id_line)
         self.filteredStops = stopsForLine
         
         // Récupérer les directions disponibles
-        self.availableDirections = LineDataService.shared.getDirectionsForLine(lineId: line.id_line)
+        self.availableDirections = transportService.getDirectionsForLine(lineId: line.id_line)
         
         self.currentStep = .selectStop
     }
     
-    // Sélectionner un arrêt
+    /// Sélectionner un arrêt
     func selectStop(_ stop: ImportedStop) {
         self.selectedStop = stop
-        
-        print(stop)
         
         if availableDirections.count > 1 {
             // S'il y a plusieurs directions, passer à l'étape de sélection de direction
@@ -175,14 +190,14 @@ class AddTransportViewModel: ObservableObject {
         }
     }
     
-    // Sélectionner une direction
+    /// Sélectionner une direction
     func selectDirection(_ direction: LineDirection) {
         self.selectedDirection = direction
         self.currentStep = .nameFavorite
         self.setDefaultDisplayName()
     }
     
-    // Définir un nom d'affichage par défaut
+    /// Définir un nom d'affichage par défaut
     private func setDefaultDisplayName() {
         var name = ""
         
@@ -201,7 +216,62 @@ class AddTransportViewModel: ObservableObject {
         self.displayName = name
     }
     
-    // Enregistrer le transport favori
+    // MARK: - Chargement des données
+    
+    /// Charger les données de transport si nécessaire
+    func loadTransportData() async {
+        startLoading()
+        
+        // Charger les données manquantes
+        var success = true
+        
+        if transportService.getAllLines().isEmpty {
+            success = await transportService.loadLinesFromFile(named: "transport_lines")
+            if !success {
+                await MainActor.run {
+                    self.showAlert(message: "Erreur lors du chargement des lignes")
+                }
+            }
+        }
+        
+        if transportService.getAllStops().isEmpty {
+            success = await transportService.loadStopsFromFile(named: "transport_stops")
+            if !success {
+                await MainActor.run {
+                    self.showAlert(message: "Erreur lors du chargement des arrêts")
+                }
+            }
+        }
+        
+        // Recharger les filtres après chargement des données
+        await MainActor.run {
+            if let mode = selectedTransportMode {
+                self.filterLines(query: searchLineQuery)
+            }
+            
+            if let line = selectedLine {
+                self.filterStops(query: searchStopQuery)
+            }
+            
+            self.stopLoading()
+        }
+    }
+    
+    /// Vérifier si des données sont disponibles
+    func checkDataAvailability() {
+        if filteredLines.isEmpty && selectedTransportMode != nil && !isLoading {
+            print("Aucune ligne trouvée pour le mode \(String(describing: selectedTransportMode))")
+            
+            // Essayer de rafraîchir les données
+            Task {
+                await loadTransportData()
+            }
+        }
+    }
+    
+    // MARK: - Enregistrement des favoris
+    
+    /// Enregistrer le transport favori sans conditions
     func saveFavorite() {
         guard let stop = selectedStop,
               let line = selectedLine else {
@@ -229,27 +299,8 @@ class AddTransportViewModel: ObservableObject {
             stopType: stop.stop_type
         )
         
-        // Enregistrer le favori dans SwiftData
-        if let modelContext = modelContext {
-            do {
-                // Vérifier si le modèle existe dans le contexte
-                let descriptor = FetchDescriptor<TransportFavoriteModel>()
-                _ = try modelContext.fetch(descriptor)
-                
-                // Si aucune erreur, alors nous pouvons insérer
-                let favoriteModel = TransportFavoriteModel.fromStruct(favorite)
-                modelContext.insert(favoriteModel)
-                
-                try modelContext.save()
-                print("Favori enregistré avec succès dans SwiftData")
-            } catch {
-                print("Erreur lors de l'enregistrement du favori dans SwiftData: \(error)")
-                // Fallback vers UserDefaults
-                StorageService.shared.saveFavorite(favorite)
-            }
-        } else {
-            StorageService.shared.saveFavorite(favorite)
-        }
+        // Enregistrer le favori via le service
+        favoriteService.saveFavorite(favorite)
         
         DispatchQueue.main.async {
             self.isSaving = false
@@ -257,6 +308,153 @@ class AddTransportViewModel: ObservableObject {
         }
     }
     
+    /// Enregistrer les conditions configurées avec le favori
+    func saveConditions() {
+        guard let stop = selectedStop,
+              let line = selectedLine else {
+            return
+        }
+        
+        isSaving = true
+        
+        // Créer un nouveau favori avec les conditions configurées et les informations complètes
+        let favorite = TransportFavorite(
+            id: UUID(),
+            stopId: stop.id_stop,
+            lineId: line.id_line,
+            displayName: displayName,
+            displayConditions: displayConditions,
+            priority: 0,
+            lineName: line.name_line,
+            lineShortName: line.shortname_line,
+            lineColor: line.colourweb_hexa ?? "007AFF",
+            lineTextColor: line.textcolourweb_hexa ?? "FFFFFF",
+            lineTransportMode: line.transportmode,
+            stopName: stop.name_stop,
+            stopLatitude: stop.latitude,
+            stopLongitude: stop.longitude,
+            stopType: stop.stop_type
+        )
+        
+        // Enregistrer le favori via le service
+        favoriteService.saveFavorite(favorite)
+        
+        DispatchQueue.main.async {
+            self.isSaving = false
+            self.favoriteCreated = true
+        }
+    }
+    
+    // MARK: - Gestion des conditions
+    
+    /// Ajouter une nouvelle condition
+    func addCondition(_ condition: DisplayCondition) {
+        displayConditions.append(condition)
+    }
+    
+    /// Supprimer une condition
+    func removeCondition(at index: Int) {
+        guard index >= 0 && index < displayConditions.count else { return }
+        displayConditions.remove(at: index)
+    }
+    
+    /// Activer/désactiver une condition
+    func toggleCondition(at index: Int, isActive: Bool) {
+        guard index >= 0 && index < displayConditions.count else { return }
+        displayConditions[index].isActive = isActive
+    }
+    
+    /// Éditer une condition
+    func editCondition(at index: Int) {
+        guard index >= 0 && index < displayConditions.count else { return }
+        
+        editingConditionIndex = index
+        
+        // Définir le type de sheet à afficher en fonction du type de condition
+        switch displayConditions[index].type {
+        case .timeRange:
+            activeConditionSheet = .timeRange
+        case .dayOfWeek:
+            activeConditionSheet = .dayOfWeek
+        case .location:
+            activeConditionSheet = .location
+        }
+    }
+    
+    // MARK: - Méthodes pour créer de nouvelles conditions
+    
+    /// Ajouter une nouvelle condition de plage horaire
+    func addTimeRangeCondition() {
+        editingConditionIndex = nil
+        activeConditionSheet = .timeRange
+    }
+    
+    /// Ajouter une nouvelle condition de jour de la semaine
+    func addDayOfWeekCondition() {
+        editingConditionIndex = nil
+        activeConditionSheet = .dayOfWeek
+    }
+    
+    /// Ajouter une nouvelle condition de localisation
+    func addLocationCondition() {
+        editingConditionIndex = nil
+        activeConditionSheet = .location
+    }
+    
+    func closeConditionSheet() {
+        activeConditionSheet = .none
+        editingConditionIndex = nil
+    }
+    
+    // MARK: - Méthodes pour mettre à jour des conditions existantes
+    
+    /// Mettre à jour une condition de plage horaire
+    func updateTimeRangeCondition(at index: Int, timeRange: TimeRangeCondition) {
+        guard index >= 0 && index < displayConditions.count else { return }
+        
+        var updatedCondition = displayConditions[index]
+        updatedCondition.timeRange = timeRange
+        displayConditions[index] = updatedCondition
+    }
+    
+    /// Mettre à jour une condition de jour de la semaine
+    func updateDayOfWeekCondition(at index: Int, dayOfWeek: DayOfWeekCondition) {
+        guard index >= 0 && index < displayConditions.count else { return }
+        
+        var updatedCondition = displayConditions[index]
+        updatedCondition.dayOfWeekCondition = dayOfWeek
+        displayConditions[index] = updatedCondition
+    }
+    
+    /// Mettre à jour une condition de localisation
+    func updateLocationCondition(at index: Int, location: LocationCondition) {
+        guard index >= 0 && index < displayConditions.count else { return }
+        
+        var updatedCondition = displayConditions[index]
+        updatedCondition.locationCondition = location
+        displayConditions[index] = updatedCondition
+    }
+    
+    // MARK: - Méthodes pour sauvegarder les conditions
+    
+    /// Sauvegarder une condition de plage horaire
+    func saveTimeRangeCondition(editingIndex: Int?, timeRangeCondition: TimeRangeCondition) {
+        if let index = editingIndex {
+            updateTimeRangeCondition(at: index, timeRange: timeRangeCondition)
+        } else {
+            let newCondition = DisplayCondition(
+                type: .timeRange,
+                isActive: true,
+                timeRange: timeRangeCondition
+            )
+            addCondition(newCondition)
+        }
+        
+        // Fermer le sheet
+        closeConditionSheet()
+    }
+    
+    /// Sauvegarder une condition de jour de la semaine
     func saveDayOfWeekCondition(editingIndex: Int?, dayOfWeekCondition: DayOfWeekCondition) {
         if let index = editingIndex {
             // Mettre à jour une condition existante
@@ -274,64 +472,14 @@ class AddTransportViewModel: ObservableObject {
         closeConditionSheet()
     }
     
-    func saveTimeRangeCondition(editingIndex: Int?, timeRangeCondition: TimeRangeCondition) {
-        if let index = editingIndex {
-            updateTimeRangeCondition(at: index, timeRange: timeRangeCondition)
-        } else {
-            let newCondition = DisplayCondition(
-                type: .timeRange,
-                isActive: true,
-                timeRange: timeRangeCondition
-            )
-            addCondition(newCondition)
-        }
-        
-        // Fermer le sheet
-        closeConditionSheet()
+    /// Passer à l'étape de configuration des conditions après le nommage
+    func continueToConditions() {
+        afterNamingStep = .configureConditions
     }
     
-    // Vérifier si des données sont disponibles
-    func checkDataAvailability() {
-        if filteredLines.isEmpty && selectedTransportMode != nil && !isLoading {
-            print("Aucune ligne trouvée pour le mode \(String(describing: selectedTransportMode))")
-            
-            // Essayer de rafraîchir les données
-            Task {
-                await loadTransportData()
-            }
-        }
-    }
+    // MARK: - Réinitialisation
     
-    // Charger les données si nécessaire
-    func loadTransportData() async {
-        if LineDataService.shared.getAllLines().isEmpty {
-            // Charger les données des lignes depuis le fichier
-            LineDataService.shared.loadLinesFromFile(named: "transport_lines")
-        }
-        
-        if StopDataService.shared.getAllStops().isEmpty {
-            // Charger les données des arrêts depuis le fichier
-            StopDataService.shared.loadStopsFromFile(named: "transport_stops")
-        }
-        
-        // Rechargement des filtres après chargement des données
-        await MainActor.run {
-            if let mode = selectedTransportMode {
-                self.filterLines(query: searchLineQuery)
-            }
-            
-            if let line = selectedLine {
-                self.filterStops(query: searchStopQuery)
-            }
-        }
-    }
-    
-    // Variable pour indiquer si le chargement est en cours
-    var isLoading: Bool {
-        return LineDataService.shared.isLoading || StopDataService.shared.isLoading
-    }
-    
-    // Réinitialiser le flux d'ajout
+    /// Réinitialiser le flux d'ajout
     func reset() {
         selectedTransportMode = nil
         selectedLine = nil
@@ -343,7 +491,9 @@ class AddTransportViewModel: ObservableObject {
         filteredLines = []
         filteredStops = []
         availableDirections = []
+        displayConditions = []
         currentStep = .selectTransportMode
+        afterNamingStep = .saveWithoutConditions
         favoriteCreated = false
     }
 }

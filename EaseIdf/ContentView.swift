@@ -5,53 +5,48 @@
 //  Created by Samuel DELIENS on 14/04/2025.
 //
 
+
 import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    // Contexte SwiftData automatiquement injecté
     @Environment(\.modelContext) private var modelContext
+    
+    // ViewModels
     @StateObject private var authViewModel = AuthViewModel()
     @StateObject private var favoritesViewModel = FavoritesViewModel()
+    
+    // États UI
     @State private var showingSettings = false
     @State private var showingAddTransport = false
     @State private var initialLoadComplete = false
-    
-    @State var showEditTransportList = false
-    @State var showAuthModal = true
+    @State private var showEditTransportList = false
+    @State private var showAuthModal = true
     
     var body: some View {
         NavigationStack {
             VStack {
+                // Bannière d'authentification si nécessaire
                 if !authViewModel.isAuthenticated {
-                        HStack {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.system(size: 14))
-                                .foregroundColor(.orange)
-                                .padding(.bottom, 4)
-                            
-                            Text("Authentification requise")
-                                .font(.subheadline)
-                                .fontWeight(.bold)
-                            
-                            Button("clé API") {
-                                showAuthModal = true
-                            }
-                        }
-                        .padding(.top, 5)
-                    }
+                    authenticationBanner
+                }
                 
+                // Vue principale de la liste des favoris
                 FavoritesListView(viewModel: favoritesViewModel, showEditTransportList: $showEditTransportList)
             }
             .navigationTitle("EaseIdf")
             .toolbar {
+                // Bouton d'édition
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(showEditTransportList ? "Done" : "Edit") {
+                    Button(showEditTransportList ? "Terminer" : "Modifier") {
                         withAnimation {
                             showEditTransportList.toggle()
                         }
                     }
                 }
                 
+                // Bouton d'ajout
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: {
                         showingAddTransport = true
@@ -60,6 +55,7 @@ struct ContentView: View {
                     }
                 }
                 
+                // Bouton des paramètres
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(action: {
                         showingSettings = true
@@ -74,40 +70,63 @@ struct ContentView: View {
             .sheet(isPresented: $showingAddTransport) {
                 AddTransportView()
                     .onDisappear {
-                        // Refresh favorites when the sheet is dismissed
+                        // Rafraîchir les favoris lorsque la feuille est fermée
                         favoritesViewModel.loadFavorites()
                     }
             }
             .onAppear {
+                // Vérifier si l'authentification est nécessaire
                 showAuthModal = !authViewModel.isAuthenticated
                 
+                // Configurer les ViewModels avec le contexte de modèle
                 if !initialLoadComplete {
-                    // S'assurer que les données sont chargées au moins une fois
-                    Task {
-                        // Pass the model context to the favorites view model
-                        favoritesViewModel.setModelContext(modelContext)
-                        
-                        if LineDataService.shared.getAllLines().isEmpty ||
-                           StopDataService.shared.getAllStops().isEmpty {
-                            print("⚠️ Des données sont manquantes après le splash screen, rechargement...")
-                            
-                            if LineDataService.shared.getAllLines().isEmpty {
-                                LineDataService.shared.loadLinesFromFile(named: "transport_lines")
-                            }
-                            
-                            if StopDataService.shared.getAllStops().isEmpty {
-                                StopDataService.shared.loadStopsFromFile(named: "transport_stops")
-                            }
-                        }
-                        
-                        initialLoadComplete = true
-                    }
+                    favoritesViewModel.setModelContext(modelContext)
+                    
+                    // Vérifier si les données de base sont chargées
+                    validateBaseDataLoaded()
+                    
+                    initialLoadComplete = true
                 }
             }
         }
         .overlay {
+            // Afficher la modale de clé API si nécessaire
             if showAuthModal {
                 APIKeyModalView(viewModel: authViewModel, show: $showAuthModal)
+            }
+        }
+    }
+    
+    // Bannière d'authentification
+    private var authenticationBanner: some View {
+        HStack {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 14))
+                .foregroundColor(.orange)
+                .padding(.bottom, 4)
+            
+            Text("Authentification requise")
+                .font(.subheadline)
+                .fontWeight(.bold)
+            
+            Button("clé API") {
+                showAuthModal = true
+            }
+        }
+        .padding(.top, 5)
+    }
+    
+    // Vérifier que les données de base sont chargées
+    private func validateBaseDataLoaded() {
+        let transportService = AppServices.shared.transportService
+        
+        // Vérifier si les données sont toujours manquantes après le splash screen
+        if transportService.getAllLines().isEmpty ||
+           transportService.getAllStops().isEmpty {
+            print("⚠️ Des données sont manquantes après le splash screen, rechargement...")
+            
+            Task {
+                await AppServices.shared.initializeBaseData()
             }
         }
     }

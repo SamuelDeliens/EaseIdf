@@ -5,11 +5,15 @@
 //  Created by Samuel DELIENS on 14/04/2025.
 //
 
+
 import Foundation
 import SwiftData
 import Combine
 
-class SettingsViewModel: ObservableObject {
+/// ViewModel pour la gestion des paramètres
+class SettingsViewModel: BaseViewModel {
+    // MARK: - Propriétés de configuration
+    
     @Published var apiKey: String = ""
     @Published var refreshInterval: Double = 300.0
     @Published var visualRefreshInterval: Double = 60.0
@@ -20,26 +24,35 @@ class SettingsViewModel: ObservableObject {
     @Published var isTestingConnection: Bool = false
     @Published var isRefreshPaused: Bool = false
     
-    private var cancellables = Set<AnyCancellable>()
-    private var modelContext: ModelContext?
+    // MARK: - Services
     
-    init() {
-        // Initial loading will happen when the modelContext is set
+    private let authService: AuthenticationService
+    private let favoritesViewModel: FavoritesViewModel?
+    
+    // MARK: - Initialisation
+    
+    init(
+        modelContext: ModelContext? = nil,
+        authService: AuthenticationService = AuthenticationService.shared,
+        favoritesViewModel: FavoritesViewModel? = FavoritesViewModel.shared
+    ) {
+        self.authService = authService
+        self.favoritesViewModel = favoritesViewModel
+        
+        super.init(modelContext: modelContext)
     }
     
-    func setModelContext(_ context: ModelContext?) {
-        self.modelContext = context
-        loadSettings()
-    }
+    // MARK: - Charger & Sauvegarder les paramètres
     
+    /// Charger les paramètres
     func loadSettings() {
-        // Load API key from Keychain
+        // Charger la clé API depuis le service Keychain
         if let storedApiKey = KeychainService.shared.getAPIKey() {
             apiKey = storedApiKey
         }
         
         if let modelContext = modelContext {
-            // Try to load other settings from SwiftData
+            // Essayer de charger les autres paramètres depuis SwiftData
             do {
                 let descriptor = FetchDescriptor<UserSettingsModel>()
                 let userSettings = try modelContext.fetch(descriptor)
@@ -52,11 +65,11 @@ class SettingsViewModel: ObservableObject {
                     return
                 }
             } catch {
-                print("Error fetching settings from SwiftData: \(error)")
+                print("Erreur lors du chargement des paramètres depuis SwiftData: \(error)")
             }
         }
         
-        // Fall back to UserDefaults via StorageService for other settings
+        // Fallback vers UserDefaults via StorageService
         let defaultSettings = StorageService.shared.getUserSettings()
         refreshInterval = defaultSettings.refreshInterval
         showOnlyUpcomingDepartures = defaultSettings.showOnlyUpcomingDepartures
@@ -64,11 +77,12 @@ class SettingsViewModel: ObservableObject {
         isRefreshPaused = defaultSettings.isRefreshPaused
     }
     
+    /// Sauvegarder les paramètres
     func saveSettings() {
-        // Save API key to Keychain
+        // Sauvegarder la clé API dans Keychain
         _ = KeychainService.shared.saveAPIKey(apiKey)
         
-        // Save other settings to SwiftData if available
+        // Sauvegarder les autres paramètres dans SwiftData si disponible
         if let modelContext = modelContext {
             do {
                 let descriptor = FetchDescriptor<UserSettingsModel>()
@@ -83,7 +97,7 @@ class SettingsViewModel: ObservableObject {
                     modelContext.insert(settings)
                 }
                 
-                // No longer storing API key in SwiftData
+                // La clé API n'est plus stockée dans SwiftData
                 settings.refreshInterval = refreshInterval
                 settings.showOnlyUpcomingDepartures = showOnlyUpcomingDepartures
                 settings.numberOfDeparturesToShow = numberOfDeparturesToShow
@@ -91,14 +105,14 @@ class SettingsViewModel: ObservableObject {
                 
                 try modelContext.save()
             } catch {
-                print("Error saving settings to SwiftData: \(error)")
+                print("Erreur lors de la sauvegarde des paramètres dans SwiftData: \(error)")
             }
         }
         
-        // Also save to UserDefaults via StorageService for backward compatibility
+        // Également sauvegarder dans UserDefaults via StorageService pour la compatibilité
         let userDefaults = UserSettings(
             favorites: StorageService.shared.getUserSettings().favorites,
-            apiKey: nil, // Don't store API key in UserDefaults anymore
+            apiKey: nil, // Ne plus stocker la clé API dans UserDefaults
             refreshInterval: refreshInterval,
             showOnlyUpcomingDepartures: showOnlyUpcomingDepartures,
             numberOfDeparturesToShow: numberOfDeparturesToShow,
@@ -106,32 +120,24 @@ class SettingsViewModel: ObservableObject {
         )
         StorageService.shared.saveUserSettings(userDefaults)
         
-        // Update widget refresh interval
-        if (isRefreshPaused) {
-            FavoritesViewModel.shared.stopRefreshTimers()
-            WidgetService.shared.stopBackgroundUpdate()
-        } else {
-            FavoritesViewModel.shared.setupRefreshTimers()
-            WidgetService.shared.scheduleBackgroundUpdates(interval: refreshInterval)
-        }
+        // Mettre à jour les timers de rafraîchissement en fonction des nouveaux paramètres
+        updateRefreshTimers()
         
-        // Notify any active view models about the setting changes
+        // Notifier les autres ViewModels du changement de paramètres
         NotificationCenter.default.post(name: Notification.Name("SettingsChanged"), object: nil)
         
-        // Show confirmation
+        // Afficher la confirmation
         showSavedAlert = true
     }
     
-    func toggleRefreshPause() {
-        isRefreshPaused.toggle()
-        print("isRefreshPaused", isRefreshPaused)
-    }
+    // MARK: - Tester la clé API
     
+    /// Tester la validité de la clé API
     func testApiKey() async {
         isTestingConnection = true
         isConnectionValid = false
         
-        let isValid = await AuthenticationService.shared.saveAndValidateApiKey(apiKey)
+        let isValid = await authService.saveAndValidateApiKey(apiKey)
         
         DispatchQueue.main.async {
             self.isTestingConnection = false
@@ -143,10 +149,32 @@ class SettingsViewModel: ObservableObject {
         }
     }
     
+    // MARK: - Activer/désactiver les rafraîchissements
+        
+    /// Basculer l'état de pause des rafraîchissements
+    func toggleRefreshPause() {
+        isRefreshPaused.toggle()
+    }
+    
+    /// Mettre à jour les timers de rafraîchissement en fonction des paramètres
+    private func updateRefreshTimers() {
+        if isRefreshPaused {
+            favoritesViewModel?.stopRefreshTimers()
+            WidgetService.shared.stopBackgroundUpdate()
+        } else {
+            favoritesViewModel?.setupRefreshTimers()
+            WidgetService.shared.scheduleBackgroundUpdates(interval: refreshInterval)
+        }
+    }
+    
+    // MARK: - Actions diverses
+    
+    /// Effacer le cache
     func clearCache() {
         StorageService.shared.clearAllCache()
     }
     
+    /// Formater un intervalle de temps pour l'affichage
     func formatTimeInterval(_ interval: TimeInterval) -> String {
         if interval < 60 {
             return "\(Int(interval)) secondes"

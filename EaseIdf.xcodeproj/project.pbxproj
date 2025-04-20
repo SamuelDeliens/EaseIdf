@@ -80,7 +80,6 @@
 				Models/Imported/ImportedStop.swift,
 				Models/Operator.swift,
 				Models/Transport/Departure.swift,
-				Models/Transport/DisruptionModel.swift,
 				Models/Transport/Stop/StopAnnotation.swift,
 				Models/Transport/Stop/StopType.swift,
 				Models/Transport/TransportFavorite.swift,
