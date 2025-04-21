@@ -29,10 +29,40 @@ class TransportService {
     }
     
     /// Initialiser le conteneur de modèle SwiftData
+    // Dans TransportService ou AppServices
     func initializeModelContainer() {
         if modelContainer == nil {
-            modelContainer = DataPersistenceService.shared.getTransportDataContainer()
-            modelContext = ModelContext(modelContainer!)
+            do {
+                let schema = Schema([
+                    TransportLineModel.self,
+                    TransportStopModel.self
+                ])
+                
+                let modelConfiguration = ModelConfiguration(
+                    schema: schema,
+                    isStoredInMemoryOnly: false,
+                    allowsSave: true
+                )
+                
+                modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
+                modelContext = ModelContext(modelContainer!)
+                print("ModelContainer initialisé avec succès")
+            } catch {
+                print("Erreur lors de l'initialisation du ModelContainer: \(error)")
+                // Fallback en mémoire
+                let fallbackConfig = ModelConfiguration(schema: Schema([
+                    TransportLineModel.self,
+                    TransportStopModel.self
+                ]), isStoredInMemoryOnly: true)
+                
+                do {
+                    modelContainer = try ModelContainer(for: Schema([TransportLineModel.self, TransportStopModel.self]), configurations: [fallbackConfig])
+                    modelContext = ModelContext(modelContainer!)
+                    print("ModelContainer fallback initialisé")
+                } catch {
+                    print("Erreur critique lors de l'initialisation du fallback: \(error)")
+                }
+            }
         }
     }
     
@@ -144,11 +174,20 @@ class TransportService {
         }
         
         do {
-            let descriptor = FetchDescriptor<TransportLineModel>()
+            var descriptor = FetchDescriptor<TransportLineModel>()
+            
+            descriptor.fetchLimit = 1000
+            descriptor.sortBy = [SortDescriptor(\TransportLineModel.id)]
+            
             let lineModels = try modelContext.fetch(descriptor)
             
-            // Convertir les modèles SwiftData en ImportedLine pour la compatibilité
-            return lineModels.map { $0.toImportedLine() }
+            var importedLines: [ImportedLine] = []
+            for lineModel in lineModels {
+                let importedLine = lineModel.toImportedLine()
+                importedLines.append(importedLine)
+            }
+            
+            return importedLines
         } catch {
             print("Erreur lors de la récupération des lignes: \(error)")
             return []
